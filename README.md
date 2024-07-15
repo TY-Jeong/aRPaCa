@@ -13,7 +13,7 @@
 ## Amorphous generation
 For amorphous generation, aRPaCa use [Packmol](https://m3g.github.io/packmol/download.shtml) softwawre.
 Please make sure Packmol is installed on your device, and add the directory of the packmol excutable to PATH.
-For example, add the following line in your .bashrc (or .zshrc).
+For example, add the following line in your ~/.bashrc (or ~/.zshrc).
 
 ```ruby
 export PATH={where the packmol excutable exsit}:$PATH

@@ -8,3 +8,13 @@
 2. **Diffusion coefficient** calculation using *ab initio* molecular dynamics (AIMD)
 3. **Schottky profile** of metla/oxide interface (*will be updated*)
 4. **Electric conductivity** of oxide with arbitrary composition (*will be update*)
+
+---
+## Amorphous generation
+For amorphous generation, aRPaCa use [Packmol](https://m3g.github.io/packmol/download.shtml) softwawre.
+Please make sure Packmol is installed on your device, and add the directory of the packmol excutable to PATH.
+For example, add the following line in your .bashrc (or .zshrc).
+
+```ruby
+export PATH={where the packmol excutable exsit}:$PATH
+```

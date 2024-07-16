@@ -59,3 +59,7 @@ Last three numbers are *start*, *end* and *step* in *numpy.arange(start, end, st
 *description for arguments will be updated*
 
 ---
+## Diffusion coefficient
+**Diffusion coefficient (*D*)** of amorphous is calculated based in **Einstein relation**.
+Since this is a statistical methods, user should use enough ensembles of amorphous to ensure the reliability.
+With aRPaCa, the user can easily integrate the MD trajectory of many ensembles. 

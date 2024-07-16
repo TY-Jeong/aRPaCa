@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from colorama import Fore   # color map for tqdm
 
-GREEN = '\033[92m'  # Green color
+GREEN = '\033[92m' # Green color
+RED = '\033[91m'   # Red color
 RESET = '\033[0m'  # Reset to default color
 
 class EinsteinRelation:
@@ -278,7 +279,7 @@ class EnsembleEinstein:
         for label in tqdm(self.labels,
                           bar_format='{l_bar}{bar:20}{r_bar}{bar:-10b}',
                           ascii=True,
-                          desc=desc):
+                          desc=f'{RED}{desc}{RESET}'):
             xdatcar = self.prefix + "XDATCAR_" + str(label)
             outcar = self.prefix + "OUTCAR"
             ensemble = EinsteinRelation(xdatcar=xdatcar,

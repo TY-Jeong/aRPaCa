@@ -40,6 +40,10 @@ tags
 
 arpaca/einstein/backup/**
 
+!arpaca/einstein/backup/*.ipynb
+
 arpaca/amorphous/backup/**
+
+!arpaca/amorphous/backup/*.ipynb
 
 example/einstein/xdatcar/**

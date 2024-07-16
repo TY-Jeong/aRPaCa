@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 import numpy as np
 
 class genAmorphous:
@@ -16,6 +17,8 @@ class genAmorphous:
         """
         self.density = density
         self.chem_formula = chem_formula
+
+        self.prefix_data = '../../data/'
 
         self.atomMass = {}
         self.read_atomic_mass_table()
@@ -38,11 +41,19 @@ class genAmorphous:
         self.write_packmol_input()
 
         # run packmol
-        lines = [line.strip() for line in open("./path.dat")]
-        packmol = lines[2].split('=')[1]
-        command = packmol + " < packmol.inp > packmol.out"
-        os.system(command)
-        # os.system("/home/taeyoung/Downloads/packmol-20.14.3/packmol < packmol.inp > packmol.out")
+        try:
+            path_dat_path = os.path.join(os.path.dirname(__file__),
+                                         self.prefix_data,'path.dat')
+            with open(path_dat_path, 'r') as file:
+                lines = [line.strip() for line in file]
+            packmol = lines[2].split('=')[1]
+            command = f"{packmol} < packmol.inp > packmol.out"
+            os.system(command)
+            #subprocess.run(command, shell=True, check=True)
+        except Exception as e:
+             print(f"Error running packmol: {e}")
+             sys.exit(1)
+
         # write POSCAR
         self.covert_pdb_to_poscar(outfile)
 
@@ -50,13 +61,18 @@ class genAmorphous:
             self.clear_dummy_files()
 
     def read_atomic_mass_table(self):
-        if not(os.path.isfile('atomic_mass_table.dat')):
+        atomic_mass_table_path = os.path.join(os.path.dirname(__file__),
+                                              self.prefix_data,'atomic_mass_table.dat')
+        if not os.path.isfile(atomic_mass_table_path):
             print('atomic_mass_table.dat is not found.\n \
                   please visit https://github.com/TY-Jeong/arpaca')
             sys.exit(0)
-        lines = [line.strip() for line in open('atomic_mass_table.dat')]
+
+        with open(atomic_mass_table_path,'r') as file:
+            lines = [line.strip() for line in file]
+
         for line in lines:
-            [name, mass] = line.split('\t')
+            name, mass = line.split('\t')
             self.atomMass[name] = float(mass)
 
     def divide_chem_formula(self):
@@ -108,7 +124,8 @@ class genAmorphous:
                 f.write("end structure\n\n")
 
     def covert_pdb_to_poscar(self, outfile):
-        lines = [line.strip() for line in open('./packmol_output.pdb')]
+        with open ('packmol_output.pdb','r') as file:
+            lines = [line.strip() for line in file]
         num_tot = np.sum(self.atom_num)
         shift = (self.alat-self.alat_pbc)/2
         with open(outfile, 'w') as f:
@@ -136,6 +153,7 @@ class genAmorphous:
         os.remove('packmol.out')
         os.remove('packmol_output.pdb')
 
+
 class genInput:
     def __init__(self,
                  potcar = 'pbe',
@@ -158,6 +176,8 @@ class genInput:
         self.temp = temp
         self.charge = charge
         self.ncore = ncore
+
+        self.prefix_data = '../../data/'
 
         # write KPOINTS
         self.write_kpoints()
@@ -183,24 +203,32 @@ class genInput:
         self.write_incar()
 
     def read_recommended_potcar(self):
-        if not(os.path.isfile('recommended_potcar.dat')):
+        recommended_potcar_path = os.path.join(
+            os.path.dirname(__file__), self.prefix_data+'recommended_potcar.dat')
+        if not os.path.isfile(recommended_potcar_path):
             print('recommended_potcar.dat is not found.\n \
                   please visit https://github.com/TY-Jeong/arpaca')
-            sys.exit(0)
-        lines = [line.strip() for line in open('recommended_potcar.dat')]
+            sys.exit(0)     
+
+        with open(recommended_potcar_path, 'r') as file:
+            lines = [line.strip() for line in file]
+
         for line in lines:
-            [name, recommend] = line.split('\t')
+            name, recommend = line.split('\t')
             self.pot_recommend[name] = recommend
     
     def read_path_potcar(self):
-        if not(os.path.isfile('path.dat')):
+        path_dat_path = os.path.join(os.path.dirname(__file__), self.prefix_data+'path.dat')
+        if not os.path.isfile(path_dat_path):
             print('path.dat is not found.\n')
             sys.exit(0)
-        lines = [line.strip() for line in open('path.dat')]
-        self.prefix_pot = lines[0].split('=')[1] if self.potcar == 'pbe'\
-            else lines[1].split('=')[1]
-        if self.prefix_pot[-1] != '/':
-            self.prefix_pot += '/'
+
+        with open(path_dat_path, 'r') as file:
+            lines = [line.strip() for line in file]
+
+        self.prefix_pot = lines[0].split('=')[1] if self.potcar == 'pbe' else lines[1].split('=')[1]
+        # if self.prefix_pot[-1] != '/':
+        #     self.prefix_pot += '/'
 
     def write_kpoints(self):
         with open('./KPOINTS','w') as f:
@@ -211,18 +239,21 @@ class genInput:
             f.write("0 0 0")
             
     def write_potcar(self):
-        if not(os.path.isfile('POSCAR')):
+        if not os.path.isfile('POSCAR'):
             print('no POSCAR file exists.')
             sys.exit(0)
-        lines = [line.strip() for line in open('POSCAR')]
+        
+        with open('POSCAR', 'r') as file:
+            lines = [line.strip() for line in file]
         self.atom_name = lines[5].split()
         self.atom_num = np.array(lines[6].split(), dtype=int)
 
         with open('./POTCAR','w') as f:
             for name in self.atom_name:
-                pot = self.prefix_pot+self.pot_recommend[name]+"/POTCAR"
-                lines = [line for line in open(pot)]
-                for line in lines:
+                pot = os.path.join(self.prefix_pot, self.pot_recommend[name], 'POTCAR')
+                with open(pot, 'r') as pot_file:
+                    pot_lines = [line for line in pot_file]
+                for line in pot_lines:
                     f.write(line)
                     if 'ZVAL' in line:
                         self.zval += [float(line.split()[5])]
@@ -283,29 +314,31 @@ class xdat2pos:
             sys.exit(0)
 
         # read xdatcar
-        self.lines = [line for line in open(xdatcar)]
+        with open(xdatcar, 'r') as file:
+            self.lines = [line for line in file]
         self.num_atoms = np.array(self.lines[6].split(), dtype=int).sum()
 
         if len(args) == 1:
             step = int(args[0])
-            self.write_poscar(step)
+            self.write_poscar(step, label=f"step{step}")
         elif len(args) == 3:
             start, end, interval = int(args[0]), int(args[1]), int(args[2]) 
             steps = np.arange(start, end+1, interval)
-            if not(os.path.isdir('poscars')):
-                os.mkdir('poscars')
-            for step in steps:
-                self.write_poscar(step, prefix='poscars/')
+            if not os.path.isdir('ensembles'):
+                os.mkdir('ensembles')
+            for i, step in enumerate(steps):
+                self.write_poscar(step, label=format(i+1,'02'), prefix='ensembles/')
         else:
-            print("expected number of argumnets is 2 or 4.")
+            print("check your arguments.\nexpected number of argumnets is 2 or 4.")
             sys.exit(0)
     
-    def write_poscar(self, step, prefix='./'):
+    def write_poscar(self, step, label, prefix='./'):
         check = False
-        file_out = f"POSCAR_{step}"
+        file_out = f"POSCAR_{label}"
         with open(prefix+file_out, 'w') as f:
+            f.write(f"step {step}\n")
             for num, line in enumerate(self.lines):
-                if num < 6:
+                if num > 0 and num < 6:
                     f.write(line)
                 elif num == 6:
                     f.write(line)
@@ -319,4 +352,3 @@ class xdat2pos:
         if not check:
             print("step is out of range.")
             os.remove(prefix+file_out)
-    

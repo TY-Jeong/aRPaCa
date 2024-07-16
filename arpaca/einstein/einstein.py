@@ -504,7 +504,7 @@ class getDiffusivity:
 
     def getEnsembles(self):
         for t in tqdm(self.temp, 
-                      bar_format='{l_bar}%s{bar:40}%s{r_bar}{bar:-10b}'% (Fore.GREEN, Fore.RESET),
+                      bar_format='{l_bar}%s{bar:30}%s{r_bar}{bar:-10b}'% (Fore.GREEN, Fore.RESET),
                       ascii=False,
                       desc=f'{GREEN}TOTAL{RESET}'):
             ensemble = EnsembleEinstein(symbol=self.symbol,

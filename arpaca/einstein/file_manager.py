@@ -34,9 +34,10 @@ class getMDset:
             self.label = []
             path_now = os.getcwd()
             for name in os.listdir(self.path_poscar):
-                poscar, label = name.split('_')
-                if poscar=='POSCAR':
-                    self.label += [label]
+                if len(name.split('_')) == 2:
+                    poscar, label = name.split('_')
+                    if poscar=='POSCAR':
+                        self.label += [label]
         
         self.foldername=[]
         self.makeFolder()

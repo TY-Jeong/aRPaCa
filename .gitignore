@@ -51,3 +51,5 @@ example/einstein/2.gather_results/**
 !example/einstein/2.gather_results/*.py
 
 /example/einstein/3.post-process/xdatcar/**
+
+set_pythonpath.sh

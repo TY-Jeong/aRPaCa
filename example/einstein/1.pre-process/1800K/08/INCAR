@@ -1,0 +1,33 @@
+SYSTEM = Hf34O68
+NCORE = 4
+
+# electronic degrees
+ENCUT = 400.0
+LREAL = Auto
+PREC  = Normal
+EDIFF = 1E-5
+ISMEAR = 0
+SIGMA = 0.01
+ALGO = Fast
+MAXMIX = 40
+ISYM = 0
+NELMIN = 4
+
+# molecular dynamics
+IBRION = 0
+NSW = 10000
+POTIM = 2
+NWRITE = 0
+NBLOCK = 1
+LCHARG = .FALSE.
+LWAVE = .FALSE.
+TEBEG = 1800
+TEEND = 1800
+
+# canonical (Nose-Hoover) thermostat
+MDALGO = 2
+SMASS =  0
+ISIF = 2
+
+# charge state
+NELECT = 748.000

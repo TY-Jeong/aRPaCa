@@ -1,6 +1,6 @@
-import sys
-sys.path.append('/home/taeyoung/github/aRPaCa/arpaca/einstein')
-from einstein import *
+#import sys
+#sys.path.append('/home/taeyoung/github/aRPaCa/arpaca/einstein')
+from arpaca.einstein.einstein import *
 
 getDiffusivity(symbol='O',
                label=[format(i+1, '02') for i in range(10)],

@@ -1,3 +1,3 @@
-POT_PBE=/home/taeyoung/POT/POT_PBE
-POT_LDA=/home/taeyoung/POT/POT_LDA
-packmol=/home/taeyoung/Downloads/packmol-20.14.3/packmol
+POT_PBE=/Users/ty/cmd/POT/POT_PBE
+POT_LDA=/Users/ty/cmd/POT/POT_PBE
+packmol=/Users/ty/cmd/packmol-20.15.0/packmol

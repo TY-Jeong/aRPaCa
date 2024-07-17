@@ -439,37 +439,78 @@ class EnsembleEinstein:
 
 
 
-
 class getDiffusivity:
     def __init__(self, 
                  symbol,
-                 label,
-                 temp,
-                 segment,
-                 skip,
-                 start,
-                 end,
-                 xdatcar='./xdatcar',
-                 xyz=False):
+                 path_xdatcar='./xdatcar',
+                 skip=500,
+                 segment=1,
+                 start=500,
+                 end='auto',
+                 xyz=False,
+                 label='auto',
+                 temp='auto'):
         """
         Arg 1: (str) symbol; target atom (ex. 'O')
-        Arg 2: (list) label; label of XDATCAR files
-        Arg 3: (list) temp; range of temperature
-        Arg 4: (int) segment; number of segment
-        Arg 5: (int) skip; initial steps to be skipped
-        Arg 6: (int) start: start step for fitting
-        Arg 7: (int) end; end step for fitting
-        Arg 8: (str) xdatcar; location of xdatcar folder
-        Arg 9: (bool) if True, x, y, z component of D is calculated
+        Arg 2: (str) path_xdatcar; location of xdatcar folder
+        Arg 3: (int; opt) skip; initial steps to be skipped (default=500)
+        Arg 4: (int; opt) segment; number of segment (default=1)
+        Arg 5: (int; opt) start; start step for fitting (default=500)
+        Arg 6: (int) end; end; end step for fitting (default='auto')
+        Arg 7: (bool; opt) xyz; if True, x, y, z component of D is calculated. (default=False)
+        Arg 8: (list; opt) temp; range of temperature (default='auto')
+        Arg 9: (list; opt) label; label of XDATCAR files (default='auto')
         """
         self.symbol = symbol
-        self.label = label
-        self.temp = np.array(temp)
-        self.segment = segment
+        self.prefix = path_xdatcar
         self.skip = skip
+        self.segment = segment
         self.start = start
-        self.end = end
-        self.prefix = xdatcar
+        
+        # get temp
+        if temp == 'auto':            
+            self.temp = []
+            for filename in os.listdir(self.prefix):
+                if len(filename.split('.')) == 2:
+                    first, second = filename.split('.')
+                    if first == 'xdatcar':
+                        t = second.split('K')[0]
+                        self.temp += [t]
+            self.temp = np.sort(np.array(self.temp, dtype=int))
+        else:
+            self.temp = np.array(self.temp, dtype=int)
+
+        # get label
+        self.label = {}
+        if label == 'auto':
+            for t in self.temp:
+                label_t = []
+                path_t = os.path.join(self.prefix, f"xdatcar.{t}K")
+                for filename in os.listdir(path_t):
+                    if len(filename.split('_')) == 2:
+                        first, second = filename.split('_')
+                        if first == 'XDATCAR':
+                            label_t += [second]
+                self.label[t] = label_t
+        else:
+            for t in self.temp:
+                self.label[t] = label
+        
+        # automately set end
+        if end == 'auto':
+            path_example = os.path.join(self.prefix,
+                                        f"xdatcar.{self.temp[0]}K",
+                                        f"XDATCAR_{self.label[self.temp[0]][0]}",)
+            with open(path_example, 'r') as file:
+                lines = [line.strip() for line in file]
+            for line in reversed(lines):
+                contents = line.split()
+                if contents[0] == 'Direct':
+                    nsw = int(contents[-1])
+                    break
+            self.end = int((nsw - self.skip)/self.segment)
+        else:
+            self.end = end
 
         self.ensembles = []
         self.getEnsembles()
@@ -490,8 +531,8 @@ class getDiffusivity:
         self.saveD()
 
         print("")
-        print(f"Ea = {self.Ea} eV")
-        print(f"D0 = {self.D0} m2/s")
+        print("Ea = %.3f eV"%(self.Ea))
+        print("D0 = %.3e m2/s"%(self.D0))
 
         if xyz:
             self.diffcoeffs_x = []
@@ -510,7 +551,7 @@ class getDiffusivity:
                       desc=f'{GREEN}TOTAL{RESET}'):
             ensemble = EnsembleEinstein(symbol=self.symbol,
                                         prefix=os.path.join(self.prefix,f"xdatcar.{t}K"),
-                                        labels=self.label,
+                                        labels=self.label[t],
                                         segments=self.segment,
                                         skip=self.skip,
                                         start=self.start,

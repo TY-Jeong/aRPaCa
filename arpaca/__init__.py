@@ -26,4 +26,4 @@ def print_alpaca():
     """
     print(alpaca)
 # Call the function to print the alpaca ASCII art
-print_alpaca()
+#print_alpaca()

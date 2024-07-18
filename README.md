@@ -166,5 +166,9 @@ ein.getDiffusivity(symbol='O',
                    start=1000,
                    xyz=False)
 ```
-By running the code, the user can obtain **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)** .
+The user will see two (or three if xyz=True) images to check your calculations.
+The first image is MSD (mean squred displacement) versus time graph
+From Einstein relation,
+
+
 

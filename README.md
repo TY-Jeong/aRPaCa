@@ -37,7 +37,7 @@
 
 ${\textsf{\color{gray} will be update}}$
 
-For generating amorphous, aRPaCa uses [Packmol](https://m3g.github.io/packmol/download.shtml), the open-source code providing a good cadidate for the initial structure. Please make sure Packmol is installed on your system, and add the path of the packmol excutable into **aRPaCa/data/path.dat**. Below is an example of **path.dat**
+For amorphous generation, aRPaCa uses [Packmol](https://m3g.github.io/packmol/download.shtml), the open-source code providing a plausible random structure. Please make sure Packmol is installed on your system, and add the path of the packmol excutable into **aRPaCa/data/path.dat**. Below is an example of **path.dat**
 ```ruby
 POT_PBE=/home/taeyoung/POT/POT_PBE
 POT_LDA=/home/taeyoung/POT/POT_LDA

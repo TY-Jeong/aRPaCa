@@ -243,7 +243,7 @@ reading ../xdatcar/xdatcar.2000K/XDATCAR_01...
 	segment length = 15000
 	shape of msd = (1, 2, 15000, 3) #(segment, number of type, nsw - skip, xyz)
 ```
-In addition, a MSD graph of each atom is displayed.
+In addition, a graph containing the MSD of each atom is displayed.
 <p align="center">
 <img src="https://github.com/user-attachments/assets/d567e1ba-331e-48a4-b36e-f4988d133b2c" width="400" height="300"/> 
 </p>

@@ -86,13 +86,13 @@ aRPaCa uses the **Einstein relation** to calculate the mass transport parameters
 After the following steps, the user can obtain **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)**.
 
 #### Step 1: Generate MD simulation sets
-To calculate **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)**, MD trajectories from various temperatures are required. The user can generate the MD simulation sets using **einstein.file_manager.getMDset module**.
+To calculate mass transport parameters, MD trajectories from various temperatures are required. The user can generate the MD simulation sets using **einstein.file_manager.getMDset module**.
 
 ```ruby
-from arpaca.einstein.file_manager import *
+from arpaca.einstein import file_manager as fm
 
-getMDset(path_poscar='ensembles',
-         temp=np.arange(1500, 2000+1, 100))
+fm.getMDset(path_poscar='ensembles',
+            temp=np.arange(1500, 2000+1, 100))
 ```
 The **path_poscar** refers to directory path containing POSCAR files, which are named in format **POSCAR_{label}**.
 The user can get the POSCAR files using **amorphous.xdat2pos** module.
@@ -125,25 +125,45 @@ By running the code, the directories for MD simulation are generated.
         POSCAR # corresponding to ensembles/POSCAR_01
         POTCAR
     ⋮
-    05\ # omitted
-1700K\ # omitted
-1800K\ # omitted
-1900K\ # omitted
-2000K\ # omitted
+    05\ # contents are omitted
+1700K\ # contents are omitted
+1800K\ # contents are omitted
+1900K\ # contents are omitted
+2000K\ # contents are omitted
 ```
 #### Step 2: Run VASP
 
 #### Step 3: Gather MD trajectories
-The user can gather the MD trajectories (XDATCAR files) using below code.
+The user can gather the MD trajectories (XDATCARs) using below code.
 ```ruby
-from arpaca.einstein.file_manager import *
+from arpaca.einstein import file_manager as fm
 
-getMDresult()
+fm.getMDresult()
 ```
+The MD trajectoris (XDATCARs) and information of each calculation (OUTCARs) will be collected in **xdatcar** directory.
+```
+xdatcar\
+    xdatcar.1500K\
+        OUTCAR
+        XDATCAR_01 # corresponding to POSCAR_01
+           ⋮
+        XDATCAR_05 # corresponding to POSCAR_05
+   xdatcar.1600K\ # contents are omitted
+   xdatcar.1700K\ # contents are omitted
+   xdatcar.1800K\ # contents are omitted
+   xdatcar.1900K\ # contents are omitted
+   xdatcar.2000K\ # contents are omitted
+```
+#### Step 4: Calculate mass transprot parameters
+``` ruby
+from arpaca.einstein import einstein as ein
 
+ein.getDiffusivity(symbol='O',
+                   path_xdatcar='./xdatcar',
+                   skip=500,
+                   segment=2,
+                   start=1000,
+                   xyz=False)
+```
+By running the code, the user can obtain **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)** .
 
----
-## Diffusion coefficient
-**Diffusion coefficient (*D*)** of amorphous is calculated based in **Einstein relation**.
-Since this is a statistical methods, user should use enough ensembles of amorphous to ensure the reliability.
-With aRPaCa, the user can easily integrate the MD trajectory of many ensembles. 

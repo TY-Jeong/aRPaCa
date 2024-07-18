@@ -45,8 +45,9 @@ packmol=/home/taeyoung/Downloads/packmol-20.14.3/packmol
 ```
 ---
 ## Step by step example
-### Structure generation
 ---
+## Structure generation
+
 ### Amorphous generation
 #### Step 1: Generate input files for melt-quench
 Using **arpaca.amorphous** module, you can conveniently get input files for amorphous generation
@@ -79,8 +80,8 @@ ${\textsf{\color{gray} will be update}}$
 ${\textsf{\color{gray} will be update}}$
 
 ---
-### Parameter calculation
----
+## Parameter calculation
+
 ### Mass transport paramters
 aRPaCa uses the **Einstein relation** to calculate the mass transport parameters of oxygen vacancies in both amorphous and crystalline materials. Due to the statistical nature of this method, large ensembles are needed to ensure reliable calculations. However, the computational burden of DFT calculations limits the size of these ensembles. To address this issue, aRPaCa provides functions that integrate multiple individual MD simulations. For example, if the user runs 10 different MD simulations using amorphous Hf<SUB>34</SUB>O<SUB>68</SUB>, aRPaCa can integrate these 10 simulations to achieve the same effect as a single simulation in a cell of Hf<SUB>340</SUB>O<SUB>680</SUB>.
 
@@ -249,8 +250,47 @@ In addition, a MSD graph of each atom is displayed.
 
 ${\textsf{\color{gray} will be update}}$
 
+
 ---
 ### Schottky profile
 
 ${\textsf{\color{gray} will be update}}$
 
+---
+## Module details
+---
+## amorphous
+### amorphous.genAmorphous (*class*)
+```
+genAmorphous(density, chem_formula, outfile, clear_dummy)
+```
+* **Description** : Generating an amorphous with a density of '*density*' and a composition of '*chem_formula*'. POSCAR file named of '*outfile*' is generated.
+* **Arguments**
+  * density: (*float*) density of amorphous in unit of g/cm<SUP>3</SUP>
+  * chem_formula: (*str*) chemical formula of amorphous. **Note:** the number 1 cannot be omitted. (ex. Hf32O42Ag1)
+  * outfile: (*str; opt*) name of output file. (Default: 'POSCAR')
+  * clear_dummy: (*bool; opt*) whether to remove dummy files. (Default: True)
+
+
+### amorphous.genInput (*class*)
+```
+genInput(potcar, nsw, potim, temp, charge, ncore)
+```
+* **Description** : Generating VASP input files matching POSCAR file
+* **Arguments**
+  * potcar: (*str; opt*) kind of potcar. 'lda' or 'pbe'. (Default: 'pbe')
+  * nsw: (*int; opt*) interation number of ionic step. (Default: 10000)
+  * potim: (*int; opt*) time step in MD in unit of fs. (Default: 2)
+  * temp: (*float; opt*) temperature in unit of K. (Default: 4000)
+  * charge: (*float; opt*) charge state of the cell. (Default: 0)
+  * ncore: (*int; opt*) number of core for parallel computing. (Default: 4)
+
+
+### amorphous.xdat2pos (*class*)
+```
+xdat2pos(xdatcar, step)	# to generate one POSCAR
+xdat2pos(xdatcar, start, end, step) # to generate multiple POSCAR
+```
+* **Description** : Generating POSCAR file from XDATCAR file.
+* **Arguments**
+  * potcar: (*str; opt*) kind of potcar. 'lda' or 'pbe'. (Default: 'pbe')

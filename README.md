@@ -168,7 +168,7 @@ ein.getDiffusivity(symbol='O',
                    xyz=False # optional; if True, x, y, and z component of D is calcualted.
                   )
 ```
-After running the code, the user will obtaun two images (or three if '**xyz=True'**'). The first imgage is the MSD (mean squred displacemnt) graph.
+After running the code, the user will obtain two images (or three if '**xyz=True'**'). The first imgage is the MSD (mean squred displacemnt) graph.
 According to Einstein relation, MSD and time should have a linear relationship (i.e., $MSD = 6Dt$). Therefore, the user should check that the MSD graphs are sufficiently linear.
 Below is an example of the MSD graph.
 <p align="center">

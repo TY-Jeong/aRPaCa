@@ -56,8 +56,7 @@ from arpaca.amorphous import *
 genAmorphous(density=10.00, chem_formula="Hf34O68") # POSCAR will be generated
 genInput() # INCAR, KPOINTS, POTCAR will be generated
 ```
-This code will generate a cubic structure containing 34 Hf atoms and 68 O atoms, whose density is 10.00 g/cm<SUP>3</SUP>.
-It should be note that when the user write **chem_formula**, number 1 cannnot be omitted. For example, if user try to generate an amorphous containing 34 Hf, 68 O and 1 Ag, **chem_formula** should be Hf34O68Ag1 not Hf34O68Ag.
+This code will generate a cubic structure containing 34 Hf atoms and 68 O atoms, with a density of 10.00 g/cm<SUP>3</SUP>. Note that when specifying the chem_formula, the number 1 cannot be omitted. For example, to generate an amorphous structure containing 34 Hf atoms, 68 O atoms, and 1 Ag atom, the **chem_formula** should be written as Hf34O68Ag1, not Hf34O68Ag.
 
 #### Step 2: Run VASP
 

@@ -369,7 +369,7 @@ EnsembleEinstein(symbol, prefix, labels, segments, skip, start, end)
 * **Description** : Integrate multiple individual MD simulations, and calculate integrated MSDs and mass transprot parameters. **NOTE:** MD simulations should be obtained with the same conditions. (ex. temperature, number of MD steps, potim)
 * **Arguments**
   * symbol: (*str*) target atom species. (ex. 'O')
-  * prefix: (*str*) path where the XDATACR files exist. (ex. 'xdatcar/xdatcar.2000K/') **NOTE:** XDATCAR files should be in format of **XDATCAR_{label}**
+  * prefix: (*str*) path where the XDATACR and OUTCAR files exist. (ex. 'xdatcar/xdatcar.2000K/') **NOTE:** XDATCAR files should be in format of **XDATCAR_{label}** and name of OUTCAR file should be **OUTCAR**
   * labels: (*list*) labels of XDATCAR files.
   * segments: (*int*) number of segment. For example, if '**segment=2**', the total MD steps are divided into two MD sets, effectively doubling the overall ensemble size.
   * skip: (*int*) number of initial steps to be excluded in analysis. **Note:** Since the initial steps are unstable and contain undesirable factors like ballistic transport, excluding some initial steps helps increase the reliability of calculation.
@@ -383,4 +383,26 @@ EnsembleEinstein(symbol, prefix, labels, segments, skip, start, end)
   * diffcoeff_y: (*float*) y component of diffusion coefficient of each atom.
   * diffcoeff_z: (*float*) z component of diffusion coefficient of each atom.
   * plotEnsembleMSD: (*method*) plot MSD graph. **NOTE:** After run the method, *plt.show()* command is required.
-  * saveMSD: (*method*) save MSD data in *msd_{temp}.txt*.
+  * saveMSD: (*method*) save MSD data in **msd_{temp}.txt**.
+
+
+### einstein.einstein.getDiffusivity (*class*)
+```
+getDiffusivity(symbol, path_xdatcar, skip, segment, start, end, xyz, label, temp)
+```
+* **Description** : Calculating integrated MSD and mass transport parameters for the given temeratures.
+**Note:** directory names in **path_xdatcar** shoud be in format of **xdatcar.{temp}K**. And the name of XDATCAR and OUTCAR files in **xdatcar.{temp}K** should be in format of **XDATCAR_{label}** and **OUTCAR**.
+* **Arguments**
+  * symbol: (*str*) target atom species. (ex. 'O')
+  * path_xdatcar: (*str*) location of xdatcar folder which contains **xdatcar.{temp}K** directories.
+  * skip: (*int; opt*) number of initial steps to be excluded in analysis. **Note:** Since the initial steps are unstable and contain undesirable factors like ballistic transport, excluding some initial steps helps increase the reliability of calculation. (Default: 500)
+  * segment: (*int; opt*) number of segment. For example, if '**segment=2**', the total MD steps are divided into two MD sets, effectively doubling the overall ensemble size.
+  * skip: (*int; opt*) number of initial steps to be excluded in analysis. **Note:** Since the initial steps are unstable and contain undesirable factors like ballistic transport, excluding some initial steps helps increase the reliability of calculation. (Default: 500)
+  * start: (*int; opt*) initial step to be used in linear fitting. (Default: 500)
+  * end: (*int or 'auto'; opt*) final step to be used in linear fitting. If **end='auto'**, the end is automatically set to right end of the MSD graph. (Default: 'auto')
+  * xyz: (*bool; opt*)  if True, x, y, z component of D is calculated. (Default: False)
+  * label: (*list or 'auto'; opt*) label of XDATCAR files in **xdatcar.{temp}K** directories. (i.e., name of each XDATCAR files should be XDATCAR_{label}) If **label='auto'**, aRPaCa automatically search the labels by exploring the **path_xdatcar** directory. (Default: 'auto')
+  * temp: (*list or 'auto'; opt*) temperatures. Temperatures should be integer. If **temp='auto'**, aRPaCa automatically search the labels by exploring the **path_xdatcar** directory. (using **temp** in **xdatcar.{temp}K**) (Default: 'auto')
+* **Attributes**
+  * ensembles: (*list*) a list of integrated ensembles at each temperature. That is each component is object of **EnsembleEinstein**. **Dimension:** same with **temp**
+---

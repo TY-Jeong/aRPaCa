@@ -38,6 +38,19 @@
 ${\textsf{\color{gray} will be update}}$
 
 ---
+## Step by step example
+### Structure generation
+#### Amorphous generation
+
+
+
+
+
+
+
+
+
+---
 ## Amorphous module
 Amorphous generation is two-step process: (1) initial amorphous structure generation and (2) generating ensembles of amorphous using melt-quench method.
 Amorphous module help the users carry out this process conveniently.

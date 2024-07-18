@@ -55,3 +55,5 @@ example/einstein/2.gather_results/**
 set_pythonpath.sh
 
 data/path.dat
+
+__pycache__/

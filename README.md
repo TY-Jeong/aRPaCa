@@ -53,10 +53,10 @@ Using **arpaca.amorphous** module, you can conveniently get input files for amor
 ```ruby
 from arpaca.amorphous import *
 
-genAmorphous(density=10.00, chem_formula="Hf34O68") # POSCAR will be generated
+genAmorphous(density=10.00, chem_formula="Hf34O42") # POSCAR will be generated
 genInput() # INCAR, KPOINTS, POTCAR will be generated
 ```
-This code will generate a cubic structure containing 34 Hf atoms and 68 O atoms, with a density of 10.00 g/cm<SUP>3</SUP>. Note that when specifying the chem_formula, the number 1 cannot be omitted. For example, to generate an amorphous structure containing 34 Hf atoms, 68 O atoms, and 1 Ag atom, the **chem_formula** should be written as Hf34O68Ag1, not Hf34O68Ag.
+This code will generate a cubic structure containing 34 Hf atoms and 42 O atoms, with a density of 10.00 g/cm<SUP>3</SUP>. Note that when specifying the chem_formula, the number 1 cannot be omitted. For example, to generate an amorphous structure containing 34 Hf atoms, 42 O atoms, and 1 Ag atom, the **chem_formula** should be written as Hf34O42Ag1, not Hf34O42Ag.
 
 #### Step 2: Run VASP
 
@@ -161,10 +161,11 @@ from arpaca.einstein import einstein as ein
 
 ein.getDiffusivity(symbol='O',
                    path_xdatcar='./xdatcar',
-                   skip=500,
-                   segment=2,
-                   start=1000,
-                   xyz=False)
+                   skip=500, # optional; exclude first 500 steps.
+                   segment=2, # optional; divide total MD step into two segment. (ex. 15000 step -> two 7500 step)
+                   start=1000, # optional; assign fitting range.
+                   xyz=False # optional; if True, x, y, and z component of D is calcualted.
+                  )
 ```
 After running the code, the user will obtaun two images (or three if '**xyz=True'**'). The first imgage is the MSD (mean squred displacemnt) graph.
 According to Einstein relation, MSD and time should have a linear relationship (i.e., $MSD = 6Dt$). Therefore, the user should check that the MSD graphs are sufficiently linear.
@@ -185,3 +186,71 @@ To ensure the reliability of calculations, the points should be well alighned wi
 
 
 The calculated **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)** values will be written in **D.txt** file.
+```
+# D.txt
+Ea = 0.7442163575033494 eV
+D0 = 2.073189097303261e-07 m2/s
+
+T (K)   D (m2/s)
+1500    6.170153833929504e-10
+1600    1.0062298779273406e-09
+1700    1.32240515177761e-09
+1800    1.7033480801825758e-09
+1900    2.135080855776783e-09
+2000    2.7588899714142115e-09
+```
+
+#### Appendix : Explore an individal ensemble
+Below is an example of a method to explore an individual ensemble.
+```ruby
+import numpy as np
+from arpaca.einstein import einstein as ein
+
+example = ein.EinsteinRelation(xdatcar='../xdatcar/xdatcar.2000K/XDATCAR_01',
+                               outcar='../xdatcar/xdatcar.2000K/OUTCAR',
+                               skip=0, # optional; exclude first 500 steps.
+                               segment=1,# optional; divide total MD step into two segment.
+                               verbose=True
+                              ) 
+
+D = example.diffcoeff.squeeze()   # [[Dx(Hf), Dy(Hf), Dz(Hf)],
+                                  #  [Dx(O),  Dy(O),  Dz(O)]]
+D_Hf, D_O = np.average(D, axis=1)
+print("D_Hf = %.3e m2/s"%D_Hf) # Diffusivity of Hf
+print("D_O  = %.3e m2/s"%D_O) # Diffusivity of O
+```
+If **verbose=True**, the information of the MD simulation is printed.
+```
+# 'verbose=True' prints MD information 
+reading ../xdatcar/xdatcar.2000K/OUTCAR...
+	potim = 2.0
+	nblock = 1
+
+reading ../xdatcar/xdatcar.2000K/XDATCAR_01...
+	atom type = ['Hf', 'O']
+	number of type = 2
+	number of atom = [34 42]
+	total number of atom = 76
+	shape of position = (15000, 76, 3) #(nsw, number of atom, xyz)
+
+	--- MD information ---
+	total time = 30.0 ps
+	number of segments = 1
+	segment length = 15000
+	shape of msd = (1, 2, 15000, 3) #(segment, number of type, nsw - skip, xyz)
+```
+In addition, a MSD graph of each atom is displayed.
+<p align="center">
+<img src="https://github.com/user-attachments/assets/d567e1ba-331e-48a4-b36e-f4988d133b2c" width="400" height="300"/> 
+</p>
+
+---
+### Electrical conductivity
+
+${\textsf{\color{gray} will be update}}$
+
+---
+### Schottky profile
+
+${\textsf{\color{gray} will be update}}$
+

@@ -60,6 +60,8 @@ This code will generate a cubic structure containing 34 Hf atoms and 68 O atoms,
 
 #### Step 2: Run VASP
 
+By running VASP, the user can get NVT ensmbles.
+
 #### Step 3: Extract structures from MD trajectory.
 The below code will gernerate POSCAR files using the XDATCAR file from previous step.
 

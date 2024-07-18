@@ -41,7 +41,17 @@ ${\textsf{\color{gray} will be update}}$
 ## Step by step example
 ### Structure generation
 #### Amorphous generation
+The common method for amorphous generation is melt-qunech and is divied to two steps: (1) generating an initial structure and (2) generating amorphous structures by melt-quenching. In many cases, supercells of crystalline are used for the initial structure, but it can lead to increase of calculation burden. For example, to make a supercell of λ-Ta<SUB>2</SUB>O<SUB>5</SUB> ensuring that its lattice parameters are larger than 10 Å to prevent interaction between neighboring cell, the minimum number of atoms is 168 (i.e. Ta<SUB>48</SUB>O<SUB>120</SUB>).
 
+To prevent this situation, aRPaCa use [Packmol](https://m3g.github.io/packmol/download.shtml), the open-source code providing a good cadidate for the initial structure. Please make sure Packmol is installed on your system, and add the path of the packmol excutable into **aRPaCa/data/path.dat**. Below is an example of **path.dat**
+
+```ruby
+POT_PBE=/home/taeyoung/POT/POT_PBE
+POT_LDA=/home/taeyoung/POT/POT_LDA
+packmol=/home/taeyoung/Downloads/packmol-20.14.3/packmol
+```
+
+Using arpaca.amorphous module, you can gernerate an amorphous structure with arbitrary composition.
 
 
 

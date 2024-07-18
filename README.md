@@ -83,9 +83,9 @@ ${\textsf{\color{gray} will be update}}$
 ## Parameter calculation
 
 ### Mass transport paramters
-aRPaCa uses the **Einstein relation** to calculate the mass transport parameters of oxygen vacancies in both amorphous and crystalline materials. Due to the statistical nature of this method, large ensembles are needed to ensure reliable calculations. However, the computational burden of DFT calculations limits the size of these ensembles. To address this issue, aRPaCa provides functions that integrate multiple individual MD simulations. For example, if the user runs 10 different MD simulations using amorphous Hf<SUB>34</SUB>O<SUB>68</SUB>, aRPaCa can integrate these 10 simulations to achieve the same effect as a single simulation in a cell of Hf<SUB>340</SUB>O<SUB>680</SUB>.
+aRPaCa uses the **Einstein relation** to calculate the mass transport parameters in both amorphous and crystalline materials. Due to the statistical nature of this method, large ensembles are needed to ensure reliable calculations. However, the computational burden of DFT calculations limits the size of these ensembles. To address this issue, aRPaCa provides functions that integrate multiple individual MD simulations. For example, if the user runs 10 different MD simulations using amorphous Hf<SUB>34</SUB>O<SUB>68</SUB>, aRPaCa can integrate these 10 simulations to achieve the same effect as a single simulation in a cell of Hf<SUB>340</SUB>O<SUB>680</SUB>.
 
-After the following steps, the user can obtain **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)**.
+The user can obtain **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)** through the following steps.
 
 #### Step 1: Generate MD simulation sets
 To calculate mass transport parameters, MD trajectories from various temperatures are required. The user can generate the MD simulation sets using **einstein.file_manager.getMDset module**.
@@ -99,6 +99,7 @@ fm.getMDset(path_poscar='ensembles',
 The **path_poscar** refers to directory path containing POSCAR files, which are named in format **POSCAR_{label}**.
 The user can get the POSCAR files using **amorphous.xdat2pos** module.
 ```
+# example of ensemble directory
 ensembles\
     POSCAR_01
     POSCAR_02
@@ -108,6 +109,7 @@ ensembles\
 ```
 By running the code, the directories for MD simulation are generated.
 ```
+# example of the output directories
 1500K\
     01\
         INCAR
@@ -144,6 +146,7 @@ fm.getMDresult()
 ```
 The MD trajectoris (XDATCARs) and information of each calculation (OUTCARs) will be collected in **xdatcar** directory.
 ```
+# example of xdatcar directory
 xdatcar\
     xdatcar.1500K\
         OUTCAR
@@ -207,8 +210,8 @@ Below is an example of a method to explore an individual ensemble.
 import numpy as np
 from arpaca.einstein import einstein as ein
 
-example = ein.EinsteinRelation(xdatcar='../xdatcar/xdatcar.2000K/XDATCAR_01',
-                               outcar='../xdatcar/xdatcar.2000K/OUTCAR',
+example = ein.EinsteinRelation(xdatcar='./xdatcar/xdatcar.2000K/XDATCAR_01',
+                               outcar='./xdatcar/xdatcar.2000K/OUTCAR',
                                skip=0, # optional; exclude first 500 steps.
                                segment=1,# optional; divide total MD step into two segment.
                                verbose=True

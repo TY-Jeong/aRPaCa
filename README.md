@@ -178,7 +178,7 @@ Below is an example of the MSD graph.
 <img src="https://github.com/user-attachments/assets/ff7afbc7-6477-49c7-b34d-4be764c80c46" width="400" height="300"/>
 </p>
 
-The two black vertical lines indicate the range of linear fitting used to calculate $D$. The fittung range can be adjusted using **start** and **end** arguments. If **end** is not specified, it will be automatically set to the right end. 
+The two black vertical lines indicate the range of linear fitting used to calculate $D$. The fitting range can be adjusted using **start** and **end** arguments. If **end** is not specified, it will be automatically set to the right end. 
 
 
 

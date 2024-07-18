@@ -18,7 +18,7 @@ class genAmorphous:
         self.density = density
         self.chem_formula = chem_formula
 
-        self.prefix_data = '../../data/'
+        self.prefix_data = '../data/'
 
         self.atomMass = {}
         self.read_atomic_mass_table()
@@ -177,7 +177,7 @@ class genInput:
         self.charge = charge
         self.ncore = ncore
 
-        self.prefix_data = '../../data/'
+        self.prefix_data = '../data/'
 
         # write KPOINTS
         self.write_kpoints()

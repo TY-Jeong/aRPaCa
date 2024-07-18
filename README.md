@@ -186,7 +186,7 @@ The second image is Arrheniys plot. (i.e., $ln D = ln D_{0} - \frac{E_{a}}{k_{B}
 <p align="center">
 <img src="https://github.com/user-attachments/assets/ec2f42e9-04e2-4b7f-be61-721ff821e2ea" width="400" height="300"/> 
 </p>
-To ensure the reliability of calculations, the points should be well alighned with the fitting line.
+To ensure the reliability of calculations, the points should be well aligned with the fitting line.
 
 
 The calculated **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)** values will be written in **D.txt** file.

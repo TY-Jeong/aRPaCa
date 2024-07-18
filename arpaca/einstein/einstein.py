@@ -478,7 +478,7 @@ class getDiffusivity:
                         self.temp += [t]
             self.temp = np.sort(np.array(self.temp, dtype=int))
         else:
-            self.temp = np.array(self.temp, dtype=int)
+            self.temp = np.array(temp, dtype=int)
 
         # get label
         self.label = {}

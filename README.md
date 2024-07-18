@@ -2,19 +2,40 @@
 ---
 **aRPaCa** (***a****b-initio* **R**RAM **Pa**rameter **Ca**lculator) is a python package for calculating parameters used in RRAM simulation, which contains modules for pre- or post-processing of DFT calculation using VASP. (Note: aRPaCa is written baed on VASP 5.4.4.)
 
-#### Functions in aRPaCa:
+#### <ins>Functions in aRPaCa</ins>:
 
-1. Tools for **structure generation**. (amorphous, crystalline, and interface)
-2. **Diffusion coefficient** calculation using *ab initio* molecular dynamics (AIMD)
+1. Tools for **structure generation**.
+2. **Diffusion coefficient** calculation using *ab initio* molecular dynamics
 3. **Schottky profile** of metla/oxide interface ${\textsf{\color{gray} will be update}}$
-4. **Electric conductivity** of oxide with arbitrary composition (*will be update*)
+4. **Electric conductivity** of oxide with arbitrary composition ${\textsf{\color{gray} will be update}}$
 
-#### Contents:
+#### <ins>Contents</ins>:
+* **Installation**
 
+* **Step by step exampe**
+  * Structure generation
+    * Amorphous generation
+    * Crystallin generation ${\textsf{\color{gray} will be update}}$
+    * Interface generation ${\textsf{\color{gray} will be update}}$
+
+  * **Parameter calculation**
+    * Mass transport paramters
+    * Electrical conductivity ${\textsf{\color{gray} will be update}}$
+    * Schottky profile ${\textsf{\color{gray} will be update}}$
+
+* **Parameter calculation**
+  * amorphous
+  * einstein
+    * einstein.file_manager
+    * einstein.einstein
+  * ${\textsf{\color{gray} will be update}}$
+  * ${\textsf{\color{gray} will be update}}$
+  * ${\textsf{\color{gray} will be update}}$
+  * ${\textsf{\color{gray} will be update}}$
 ---
 ## Install
 
-*will be updated*
+${\textsf{\color{gray} will be update}}$
 
 ---
 ## Amorphous module

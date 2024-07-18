@@ -12,7 +12,7 @@
 #### <ins>Contents</ins>:
 * **Installation**
 
-* **Step by step exampe**
+* **Step by step example**
   * Structure generation
     * Amorphous generation
     * Crystallin generation ${\textsf{\color{gray} will be update}}$

@@ -68,7 +68,7 @@ The below code will gernerate POSCAR files using the XDATCAR file from previous 
 ```ruby
 from arpaca.amorphous import *
 
-xdat2pos('XDATCAR', 1000, 10000, 1000) # numpy.arange(1000, 10000+1, 1000)
+xdat2pos('XDATCAR', 1000, 10000, 1000) # numpy.arange(1000, 10000+1, 2000)
 ```
 The last three arguments are *start*, *end*, and *step* in numpy.arange(*start*, *end*, *step*). The generated POSCAR files will be saved in **ensmebles** directory.
 
@@ -166,9 +166,22 @@ ein.getDiffusivity(symbol='O',
                    start=1000,
                    xyz=False)
 ```
-The user will see two (or three if xyz=True) images to check your calculations.
-The first image is MSD (mean squred displacement) versus time graph
-From Einstein relation,
+After running the code, the user will obtaun two images (or three if '**xyz=True'**'). The first imgage is the MSD (mean squred displacemnt) graph.
+According to Einstein relation, MSD and time should have a linear relationship (i.e., $MSD = 6Dt$). Therefore, the user should check that the MSD graphs are sufficiently linear.
+Below is an example of the MSD graph.
+<p align="center">
+<img src="https://github.com/user-attachments/assets/ff7afbc7-6477-49c7-b34d-4be764c80c46" width="400" height="300"/>
+</p>
+
+The two black vertical lines indicate the range of linear fitting used to calculate $D$. The fittung range can be adjusted using **start** and **end** arguments. If **end** is not specified, it will be automatically set to the right end. 
 
 
 
+The second image is Arrheniys plot. (i.e., $ln D = ln D_{0} - \frac{E_{a}}{k_{B}} \frac{1}{T}$)
+<p align="center">
+<img src="https://github.com/user-attachments/assets/ec2f42e9-04e2-4b7f-be61-721ff821e2ea" width="400" height="300"/> 
+</p>
+To ensure the reliability of calculations, the points should be well alighned with the fitting line.
+
+
+The calculated **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)** values will be written in **D.txt** file.

@@ -6,7 +6,7 @@
 
 1. Tools for **structure generation**. (amorphous, crystalline, and interface)
 2. **Diffusion coefficient** calculation using *ab initio* molecular dynamics (AIMD)
-3. **Schottky profile** of metla/oxide interface (*will be updated*)
+3. **Schottky profile** of metla/oxide interface ${\textsf{\color{gray} will be update}}$
 4. **Electric conductivity** of oxide with arbitrary composition (*will be update*)
 
 #### Contents:

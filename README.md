@@ -12,7 +12,7 @@
 #### <ins>Contents</ins>:
 * **Installation**
 
-* **Step by step exampe**
+* **Step by step example**
   * Structure generation
     * Amorphous generation
     * Crystallin generation ${\textsf{\color{gray} will be update}}$
@@ -37,7 +37,7 @@
 
 ${\textsf{\color{gray} will be update}}$
 
-For generating amorphous, aRPaCa uses [Packmol](https://m3g.github.io/packmol/download.shtml), the open-source code providing a good cadidate for the initial structure. Please make sure Packmol is installed on your system, and add the path of the packmol excutable into **aRPaCa/data/path.dat**. Below is an example of **path.dat**
+For amorphous generation, aRPaCa uses [Packmol](https://m3g.github.io/packmol/download.shtml), the open-source code providing a plausible random structure. Please make sure Packmol is installed on your system, and add the path of the packmol excutable into **aRPaCa/data/path.dat**. Below is an example of **path.dat**
 ```ruby
 POT_PBE=/home/taeyoung/POT/POT_PBE
 POT_LDA=/home/taeyoung/POT/POT_LDA
@@ -83,9 +83,9 @@ ${\textsf{\color{gray} will be update}}$
 ## Parameter calculation
 
 ### Mass transport paramters
-aRPaCa uses the **Einstein relation** to calculate the mass transport parameters of oxygen vacancies in both amorphous and crystalline materials. Due to the statistical nature of this method, large ensembles are needed to ensure reliable calculations. However, the computational burden of DFT calculations limits the size of these ensembles. To address this issue, aRPaCa provides functions that integrate multiple individual MD simulations. For example, if the user runs 10 different MD simulations using amorphous Hf<SUB>34</SUB>O<SUB>68</SUB>, aRPaCa can integrate these 10 simulations to achieve the same effect as a single simulation in a cell of Hf<SUB>340</SUB>O<SUB>680</SUB>.
+aRPaCa uses the **Einstein relation** to calculate the mass transport parameters in both amorphous and crystalline materials. Due to the statistical nature of this method, large ensembles are needed to ensure reliable calculations. However, the computational burden of DFT calculations limits the size of these ensembles. To address this issue, aRPaCa provides functions that integrate multiple individual MD simulations. For example, if the user runs 10 different MD simulations using amorphous Hf<SUB>34</SUB>O<SUB>68</SUB>, aRPaCa can integrate these 10 simulations to achieve the same effect as a single simulation in a cell of Hf<SUB>340</SUB>O<SUB>680</SUB>.
 
-After the following steps, the user can obtain **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)**.
+The user can obtain **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)** through the following steps.
 
 #### Step 1: Generate MD simulation sets
 To calculate mass transport parameters, MD trajectories from various temperatures are required. The user can generate the MD simulation sets using **einstein.file_manager.getMDset module**.
@@ -99,6 +99,7 @@ fm.getMDset(path_poscar='ensembles',
 The **path_poscar** refers to directory path containing POSCAR files, which are named in format **POSCAR_{label}**.
 The user can get the POSCAR files using **amorphous.xdat2pos** module.
 ```
+# example of ensemble directory
 ensembles\
     POSCAR_01
     POSCAR_02
@@ -108,6 +109,7 @@ ensembles\
 ```
 By running the code, the directories for MD simulation are generated.
 ```
+# example of the output directories
 1500K\
     01\
         INCAR
@@ -144,6 +146,7 @@ fm.getMDresult()
 ```
 The MD trajectoris (XDATCARs) and information of each calculation (OUTCARs) will be collected in **xdatcar** directory.
 ```
+# example of xdatcar directory
 xdatcar\
     xdatcar.1500K\
         OUTCAR
@@ -168,14 +171,14 @@ ein.getDiffusivity(symbol='O',
                    xyz=False # optional; if True, x, y, and z component of D is calcualted.
                   )
 ```
-After running the code, the user will obtaun two images (or three if '**xyz=True'**'). The first imgage is the MSD (mean squred displacemnt) graph.
+After running the code, the user will obtain two images (or three if '**xyz=True'**'). The first imgage is the MSD (mean squred displacemnt) graph.
 According to Einstein relation, MSD and time should have a linear relationship (i.e., $MSD = 6Dt$). Therefore, the user should check that the MSD graphs are sufficiently linear.
 Below is an example of the MSD graph.
 <p align="center">
 <img src="https://github.com/user-attachments/assets/ff7afbc7-6477-49c7-b34d-4be764c80c46" width="400" height="300"/>
 </p>
 
-The two black vertical lines indicate the range of linear fitting used to calculate $D$. The fittung range can be adjusted using **start** and **end** arguments. If **end** is not specified, it will be automatically set to the right end. 
+The two black vertical lines indicate the range of linear fitting used to calculate $D$. The fitting range can be adjusted using **start** and **end** arguments. If **end** is not specified, it will be automatically set to the right end. 
 
 
 
@@ -183,7 +186,7 @@ The second image is Arrheniys plot. (i.e., $ln D = ln D_{0} - \frac{E_{a}}{k_{B}
 <p align="center">
 <img src="https://github.com/user-attachments/assets/ec2f42e9-04e2-4b7f-be61-721ff821e2ea" width="400" height="300"/> 
 </p>
-To ensure the reliability of calculations, the points should be well alighned with the fitting line.
+To ensure the reliability of calculations, the points should be well aligned with the fitting line.
 
 
 The calculated **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)** values will be written in **D.txt** file.
@@ -207,8 +210,8 @@ Below is an example of a method to explore an individual ensemble.
 import numpy as np
 from arpaca.einstein import einstein as ein
 
-example = ein.EinsteinRelation(xdatcar='../xdatcar/xdatcar.2000K/XDATCAR_01',
-                               outcar='../xdatcar/xdatcar.2000K/OUTCAR',
+example = ein.EinsteinRelation(xdatcar='./xdatcar/xdatcar.2000K/XDATCAR_01',
+                               outcar='./xdatcar/xdatcar.2000K/OUTCAR',
                                skip=0, # optional; exclude first 500 steps.
                                segment=1,# optional; divide total MD step into two segment.
                                verbose=True
@@ -240,7 +243,7 @@ reading ../xdatcar/xdatcar.2000K/XDATCAR_01...
 	segment length = 15000
 	shape of msd = (1, 2, 15000, 3) #(segment, number of type, nsw - skip, xyz)
 ```
-In addition, a MSD graph of each atom is displayed.
+In addition, a graph containing the MSD of each atom is displayed.
 <p align="center">
 <img src="https://github.com/user-attachments/assets/d567e1ba-331e-48a4-b36e-f4988d133b2c" width="400" height="300"/> 
 </p>

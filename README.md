@@ -6,8 +6,8 @@
 
 1. Tools for **structure generation**.
 2. **Diffusion coefficient** calculation using *ab initio* molecular dynamics
-3. **Schottky profile** of metla/oxide interface ${\textsf{\color{gray} will be update}}$
-4. **Electric conductivity** of oxide with arbitrary composition ${\textsf{\color{gray} will be update}}$
+3. **Schottky profile** of metla/oxide interface (<ins>will be updated</ins>)
+4. **Electric conductivity** of oxide with arbitrary composition (<ins>will be updated</ins>)
 
 #### <ins>Contents</ins>:
 * **Installation**
@@ -15,27 +15,27 @@
 * **Step by step example**
   * Structure generation
     * Amorphous generation
-    * Crystallin generation ${\textsf{\color{gray} will be update}}$
-    * Interface generation ${\textsf{\color{gray} will be update}}$
+    * Crystallin generation (<ins>will be updated</ins>)
+    * Interface generation (<ins>will be updated</ins>)
 
   * **Parameter calculation**
     * Mass transport paramters
-    * Electrical conductivity ${\textsf{\color{gray} will be update}}$
-    * Schottky profile ${\textsf{\color{gray} will be update}}$
+    * Electrical conductivity (<ins>will be updated</ins>)
+    * Schottky profile (<ins>will be updated</ins>)
 
 * **Module details**
   * amorphous
   * einstein
     * einstein.file_manager
     * einstein.einstein
-  * ${\textsf{\color{gray} will be update}}$
-  * ${\textsf{\color{gray} will be update}}$
-  * ${\textsf{\color{gray} will be update}}$
-  * ${\textsf{\color{gray} will be update}}$
+  * (<ins>will be updated</ins>)
+  * (<ins>will be updated</ins>)
+  * (<ins>will be updated</ins>)
+  * (<ins>will be updated</ins>)
 ---
 ## Install
 
-${\textsf{\color{gray} will be update}}$
+(<ins>will be updated</ins>)
 
 For amorphous generation, aRPaCa uses [Packmol](https://m3g.github.io/packmol/download.shtml), the open-source code providing a plausible random structure. Please make sure Packmol is installed on your system, and add the path of the packmol excutable into `aRPaCa/data/path.dat`. Below is an example of `path.dat`
 ```ruby
@@ -257,13 +257,13 @@ In addition, a graph containing the MSD of each atom is displayed.
 ---
 ### Electrical conductivity
 
-${\textsf{\color{gray} will be update}}$
+(<ins>will be updated</ins>)
 
 
 ---
 ### Schottky profile
 
-${\textsf{\color{gray} will be update}}$
+(<ins>will be updated</ins>)
 
 ---
 ## Module details

@@ -4,26 +4,26 @@
 
 ## Features
 
-1. Tools for **structure generation**.
-2. **Diffusion coefficient** calculation using *ab initio* molecular dynamics
-3. **Schottky profile** of metla/oxide interface (<ins>will be updated</ins>)
-4. **Electric conductivity** of oxide with arbitrary composition (<ins>will be updated</ins>)
+* Tools for **structure generation**.
+*  **Diffusion coefficient** calculation using *ab initio* molecular dynamics
+* **Schottky profile** of metla/oxide interface (<ins>will be updated</ins>)
+* **Electric conductivity** of oxide with arbitrary composition (<ins>will be updated</ins>)
 
 ## Contents
-* **Installation**
+* Getting started
 
-* **Step by step example**
+* Step by step example
   * Structure generation
     * Amorphous generation
     * Crystallin generation (<ins>will be updated</ins>)
     * Interface generation (<ins>will be updated</ins>)
 
-  * **Parameter calculation**
+  * Parameter calculation
     * Mass transport paramters
     * Electrical conductivity (<ins>will be updated</ins>)
     * Schottky profile (<ins>will be updated</ins>)
 
-* **Module details**
+* Module details
   * amorphous
   * einstein
     * einstein.file_manager
@@ -33,7 +33,7 @@
   * (<ins>will be updated</ins>)
   * (<ins>will be updated</ins>)
 ---
-## Install
+## Getting started
 
 (<ins>will be updated</ins>)
 

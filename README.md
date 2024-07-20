@@ -74,10 +74,10 @@ xdat2pos('XDATCAR', 1000, 10000, 1000) # numpy.arange(1000, 10000+1, 2000)
 The last three arguments are `start, end, and step` in `numpy.arange(start, end, step)`. The generated POSCAR files will be saved in `./ensmebles` directory.
 
 ### Crystallin generation
-${\textsf{\color{gray} will be update}}$
+(<ins>will be updated</ins>)
 
 ### Interface generation
-${\textsf{\color{gray} will be update}}$
+(<ins>will be updated</ins>)
 
 ---
 ## Parameter calculation

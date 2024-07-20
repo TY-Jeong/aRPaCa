@@ -37,7 +37,7 @@
 
 ${\textsf{\color{gray} will be update}}$
 
-For amorphous generation, aRPaCa uses [Packmol](https://m3g.github.io/packmol/download.shtml), the open-source code providing a plausible random structure. Please make sure Packmol is installed on your system, and add the path of the packmol excutable into **aRPaCa/data/path.dat**. Below is an example of **path.dat**
+For amorphous generation, aRPaCa uses [Packmol](https://m3g.github.io/packmol/download.shtml), the open-source code providing a plausible random structure. Please make sure Packmol is installed on your system, and add the path of the packmol excutable into `aRPaCa/data/path.dat`. Below is an example of `path.dat`
 ```ruby
 POT_PBE=/home/taeyoung/POT/POT_PBE
 POT_LDA=/home/taeyoung/POT/POT_LDA
@@ -50,14 +50,14 @@ packmol=/home/taeyoung/Downloads/packmol-20.14.3/packmol
 
 ### Amorphous generation
 #### Step 1: Generate input files for melt-quench
-Using **arpaca.amorphous** module, you can conveniently get input files for amorphous generation
+Using `arpaca.amorphous` module, you can conveniently get input files for amorphous generation
 ```ruby
 from arpaca.amorphous import *
 
 genAmorphous(density=10.00, chem_formula="Hf34O42") # POSCAR will be generated
 genInput() # INCAR, KPOINTS, POTCAR will be generated
 ```
-This code will generate a cubic structure containing 34 Hf atoms and 42 O atoms, with a density of 10.00 g/cm<SUP>3</SUP>. Note that when specifying the chem_formula, the number 1 cannot be omitted. For example, to generate an amorphous structure containing 34 Hf atoms, 42 O atoms, and 1 Ag atom, the **chem_formula** should be written as Hf34O42Ag1, not Hf34O42Ag.
+This code will generate a cubic structure containing 34 Hf atoms and 42 O atoms, with a density of 10.00 g/cm<SUP>3</SUP>. **Note** that when specifying the chem_formula, the number 1 cannot be omitted. For example, to generate an amorphous structure containing 34 Hf atoms, 42 O atoms, and 1 Ag atom, the `chem_formula` should be written as Hf34O42Ag1, not Hf34O42Ag.
 
 #### Step 2: Run VASP
 
@@ -71,7 +71,7 @@ from arpaca.amorphous import *
 
 xdat2pos('XDATCAR', 1000, 10000, 1000) # numpy.arange(1000, 10000+1, 2000)
 ```
-The last three arguments are *start*, *end*, and *step* in numpy.arange(*start*, *end*, *step*). The generated POSCAR files will be saved in **ensmebles** directory.
+The last three arguments are `start, end, and step` in `numpy.arange(start, end, step)`. The generated POSCAR files will be saved in `./ensmebles` directory.
 
 ### Crystallin generation
 ${\textsf{\color{gray} will be update}}$
@@ -88,7 +88,7 @@ aRPaCa uses the **Einstein relation** to calculate the mass transport parameters
 The user can obtain **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)** through the following steps.
 
 #### Step 1: Generate MD simulation sets
-To calculate mass transport parameters, MD trajectories from various temperatures are required. The user can generate the MD simulation sets using **einstein.file_manager.getMDset module**.
+To calculate mass transport parameters, MD trajectories from various temperatures are required. The user can generate the MD simulation sets using `einstein.file_manager.getMDset module`.
 
 ```ruby
 from arpaca.einstein import file_manager as fm
@@ -96,8 +96,8 @@ from arpaca.einstein import file_manager as fm
 fm.getMDset(path_poscar='ensembles',
             temp=np.arange(1500, 2000+1, 100))
 ```
-The **path_poscar** refers to directory path containing POSCAR files, which are named in format **POSCAR_{label}**.
-The user can get the POSCAR files using **amorphous.xdat2pos** module.
+The `path_poscar` refers to directory path containing POSCAR files, which are named in format **POSCAR_{label}**.
+The user can get the POSCAR files using `amorphous.xdat2pos` module.
 ```
 # example of ensemble directory
 ensembles\
@@ -138,13 +138,13 @@ By running the code, the directories for MD simulation are generated.
 #### Step 2: Run VASP
 
 #### Step 3: Gather MD trajectories
-The user can gather the MD trajectories (XDATCARs) using below code.
+The user can gather the MD trajectories (XDATCAR files) using below code.
 ```ruby
 from arpaca.einstein import file_manager as fm
 
 fm.getMDresult()
 ```
-The MD trajectoris (XDATCARs) and information of each calculation (OUTCARs) will be collected in **xdatcar** directory.
+The MD trajectoris (XDATCARs) and information of each calculation (OUTCARs) will be collected in `./xdatcar` directory.
 ```
 # example of xdatcar directory
 xdatcar\
@@ -171,25 +171,29 @@ ein.getDiffusivity(symbol='O',
                    xyz=False # optional; if True, x, y, and z component of D is calcualted.
                   )
 ```
-After running the code, the user will obtain two images (or three if '**xyz=True'**'). The first imgage is the MSD (mean squred displacemnt) graph.
+After running the code, the user will obtain two images (or three if '`xyz=True`). The first imgage is the MSD (mean squred displacemnt) graph.
 According to Einstein relation, MSD and time should have a linear relationship (i.e., $MSD = 6Dt$). Therefore, the user should check that the MSD graphs are sufficiently linear.
 Below is an example of the MSD graph.
-<p align="center">
-<img src="https://github.com/user-attachments/assets/ff7afbc7-6477-49c7-b34d-4be764c80c46" width="400" height="300"/>
+<div align=center>
+<p>
+    <img src="./imgs/msd.png" width="400" height="300" />
 </p>
+</div>
 
-The two black vertical lines indicate the range of linear fitting used to calculate $D$. The fitting range can be adjusted using **start** and **end** arguments. If **end** is not specified, it will be automatically set to the right end. 
+The two black vertical lines indicate the range of linear fitting used to calculate $D$. The fitting range can be adjusted using `start` and `end` arguments. If `end` is not specified, it will be automatically set to the right end. 
 
 
 
-The second image is Arrheniys plot. (i.e., $ln D = ln D_{0} - \frac{E_{a}}{k_{B}} \frac{1}{T}$)
-<p align="center">
-<img src="https://github.com/user-attachments/assets/ec2f42e9-04e2-4b7f-be61-721ff821e2ea" width="400" height="300"/> 
+The second image is Arrhenius plot. (i.e., $ln D = ln D_{0} - \frac{E_{a}}{k_{B}} \frac{1}{T}$)
+<div align=center>
+<p>
+    <img src="./imgs/Arrhenius.png" width="400" height="300" />
 </p>
-To ensure the reliability of calculations, the points should be well aligned with the fitting line.
+</div>
 
 
-The calculated **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)** values will be written in **D.txt** file.
+
+The calculated **diffusion barrier (E<SUB>a</SUB>)** and **pre-exponential of diffusivity (D<SUB>0</SUB>)** values will be written in `./D.txt`.
 ```
 # D.txt
 Ea = 0.7442163575033494 eV
@@ -223,7 +227,7 @@ D_Hf, D_O = np.average(D, axis=1)
 print("D_Hf = %.3e m2/s"%D_Hf) # Diffusivity of Hf
 print("D_O  = %.3e m2/s"%D_O) # Diffusivity of O
 ```
-If **verbose=True**, the information of the MD simulation is printed.
+If `verbose=True`, the information of the MD simulation is printed.
 ```
 # 'verbose=True' prints MD information 
 reading ../xdatcar/xdatcar.2000K/OUTCAR...
@@ -244,9 +248,11 @@ reading ../xdatcar/xdatcar.2000K/XDATCAR_01...
 	shape of msd = (1, 2, 15000, 3) #(segment, number of type, nsw - skip, xyz)
 ```
 In addition, a graph containing the MSD of each atom is displayed.
-<p align="center">
-<img src="https://github.com/user-attachments/assets/d567e1ba-331e-48a4-b36e-f4988d133b2c" width="400" height="300"/> 
+<div align=center>
+<p>
+    <img src="./imgs/appendix.png" width="400" height="300" />
 </p>
+</div>
 
 ---
 ### Electrical conductivity
@@ -267,7 +273,7 @@ ${\textsf{\color{gray} will be update}}$
 ```
 genAmorphous(density, chem_formula, outfile, clear_dummy)
 ```
-* **Description** : Generating an amorphous with a density of '*density*' and a composition of '*chem_formula*'. POSCAR file named of '*outfile*' is generated.
+* **Description** : Generating an amorphous with a density of `density` and a composition of `chem_formula`. POSCAR file named of `outfile` is generated.
 * **Arguments**
   * density: (*float*) density of amorphous in unit of g/cm<SUP>3</SUP>
   * chem_formula: (*str*) chemical formula of amorphous. **Note:** the number 1 cannot be omitted. (ex. Hf32O42Ag1)
@@ -281,7 +287,7 @@ genInput(potcar, nsw, potim, temp, charge, ncore)
 ```
 * **Description** : Generating VASP input files matching POSCAR file
 * **Arguments**
-  * potcar: (*str; opt*) kind of potcar. 'lda' or 'pbe'. (Default: 'pbe')
+  * potcar: (*str; opt*) type of potcar. 'lda' or 'pbe'. (Default: 'pbe')
   * nsw: (*int; opt*) interation number of ionic step. (Default: 10000)
   * potim: (*int; opt*) time step in MD in unit of fs. (Default: 2)
   * temp: (*float; opt*) temperature in unit of K. (Default: 4000)
@@ -302,10 +308,10 @@ xdat2pos(xdatcar, step)	# to generate one POSCAR
 ```
 xdat2pos(xdatcar, start, end, step)	# to generate one POSCAR
 ```
-* **Description** : Generating POSCAR files from XDATCAR file. POSCAR files will be generated in **./ensembles**. (ex. POSCAR_01, POSCAR_02, ...)
+* **Description** : Generating POSCAR files from XDATCAR file. POSCAR files will be generated in `./ensembles`. (ex. POSCAR_01, POSCAR_02, ...)
 * **Arguments**
   * xdatcar: (*str*) XDATCAR file
-  * start, end, step: (*int*) start, end, step in **numpy.arange(start, end+1, step)**
+  * start, end, step: (*int*) `start, end, and step` in `numpy.arange(start, end+1, step)`.
  
 ## einstein
 ## einstein.file_manager
@@ -315,7 +321,7 @@ getMDset(path_poscar, temp, label, potcar, nsw, potim, charge, ncore)
 ```
 * **Description** : Generating MD sets using POSCAR files in **path_poscar** directory.
   
-**Note:** The format of name of POSCAR files should be **'POSCAR_{label}'**, label can be an arbitrary string.
+**Note:** The format of name of POSCAR files should be `POSCAR_{label}`, label can be an arbitrary string.
 ```
 {path_poscar}\	# example of POSCAR files
     POSCAR_01
@@ -327,8 +333,8 @@ getMDset(path_poscar, temp, label, potcar, nsw, potim, charge, ncore)
 * **Arguments**
   * path_poscar: (*str*) path of directory containing POSCAR files.
   * temp: (*list*) temperature in unit of K. **Note:** only integer temperature is available
-  * label: (*list; opt*)  labels of POSCARs. (Default: *automately generated by reading files in* ***path_poscar***)
-  * potcar: (*str; opt*) kind of potcar. 'lda' or 'pbe'. (Default: 'pbe')
+  * label: (*list; opt*)  labels of POSCARs. (Default: automately generated by reading files in `path_poscar`)
+  * potcar: (*str; opt*) type of potcar. 'lda' or 'pbe'. (Default: 'pbe')
   * nsw: (*int; opt*) interation number of ionic step. (Default: 10000)
   * potim: (*int; opt*) time step in MD in unit of fs. (Default: 2)
   * charge: (*float; opt*) charge state of the cell. (Default: 0)
@@ -339,11 +345,11 @@ getMDset(path_poscar, temp, label, potcar, nsw, potim, charge, ncore)
 ```
 getMDresult(temp, label, outdir)
 ```
-* **Description** : Collecting MD results into **outdir** directory.
+* **Description** : Collecting MD results into `outdir` directory.
 * **Arguments**
-  * temp: (*list; opt*) temperature in unit of K. (Default: *automately generated by reading files in present directory*)
-  * label: (*list; opt*) labels of POSCARs. (Default: *automately generated by reading files in present directory*)
-  * outdir: (*str; opt*) directory where the results will be collected. (Default: './xdatcar')
+  * temp: (*list; opt*) temperature in unit of K. (Default: automately generated by reading files in present directory)
+  * label: (*list; opt*) labels of POSCARs. (Default: automately generated by reading files in present directory)
+  * outdir: (*str; opt*) directory where the results will be collected. (Default: `./xdatcar`)
 
 ## einstein.einstein
 ### einstein.einstein.EinsteinRelation (*class*)
@@ -354,7 +360,7 @@ EinsteinRelation(xdatcar, outcar, segments, skip, skip2, verbose, getD)
 * **Arguments**
   * xdatcar: (*str*) path of XDATCAR file.
   * outcar: (*str*) path of OUTCAR file.
-  * segment: (*int; opt*) number of segment. For example, if '**segment=2**', the total MD steps are divided into two MD sets, effectively doubling the overall ensemble size. (Default: 1)
+  * segment: (*int; opt*) number of segment. For example, if `segment=2`, the total MD steps are divided into two MD sets, effectively doubling the overall ensemble size. (Default: 1)
   * skip: (*int; opt*) number of initial steps to be excluded in analysis. **Note:** Since the initial steps are unstable and contain undesirable factors like ballistic transport, excluding some initial steps helps increase the reliability of calculation. (Default: 0)
   * skip2: (*int; opt*) skip2 specifies number of initail steps to be excluded in each segment. **Note:** In early steps in each segment, MSD might not have linear relation with time since not enough scattering is included. Hence, excluding some early steps can improve the linearity of MSD. (Default: 0)
   * verbose: (*bool; opt*) if True, MD information and MSD of each atom are displayed. (Default: True)
@@ -369,12 +375,12 @@ EinsteinRelation(xdatcar, outcar, segments, skip, skip2, verbose, getD)
 ```
 EnsembleEinstein(symbol, prefix, labels, segments, skip, start, end)
 ```
-* **Description** : Integrate multiple individual MD simulations, and calculate integrated MSDs and mass transprot parameters. **NOTE:** MD simulations should be obtained with the same conditions. (ex. temperature, number of MD steps, potim)
+* **Description** : Integrate multiple individual MD simulations, and calculate integrated MSDs and mass transprot parameters. **Note:** MD simulations should be obtained with the same conditions. (ex. temperature, number of MD steps, potim)
 * **Arguments**
   * symbol: (*str*) target atom species. (ex. 'O')
-  * prefix: (*str*) path where the XDATACR and OUTCAR files exist. (ex. 'xdatcar/xdatcar.2000K/') **NOTE:** XDATCAR files should be in format of **XDATCAR_{label}** and name of OUTCAR file should be **OUTCAR**
+  * prefix: (*str*) path where the XDATACR and OUTCAR files exist. (ex. 'xdatcar/xdatcar.2000K/') **Note:** XDATCAR files should be in format of `XDATCAR_{label}` and name of OUTCAR file should be `OUTCAR`
   * labels: (*list*) labels of XDATCAR files.
-  * segments: (*int*) number of segment. For example, if '**segment=2**', the total MD steps are divided into two MD sets, effectively doubling the overall ensemble size.
+  * segments: (*int*) number of segment. For example, if '`segment=2`, the total MD steps are divided into two MD sets, effectively doubling the overall ensemble size.
   * skip: (*int*) number of initial steps to be excluded in analysis. **Note:** Since the initial steps are unstable and contain undesirable factors like ballistic transport, excluding some initial steps helps increase the reliability of calculation.
   * start: (*int; opt*) initial step to be used in linear fitting.
   * end: (*int; opt*) final step to be used in linear fitting.
@@ -385,8 +391,8 @@ EnsembleEinstein(symbol, prefix, labels, segments, skip, start, end)
   * diffcoeff_x: (*float*) x component of diffusion coefficient of each atom.
   * diffcoeff_y: (*float*) y component of diffusion coefficient of each atom.
   * diffcoeff_z: (*float*) z component of diffusion coefficient of each atom.
-  * plotEnsembleMSD: (*method*) plot MSD graph. **NOTE:** After run the method, *plt.show()* command is required.
-  * saveMSD: (*method*) save MSD data in **msd_{temp}.txt**.
+  * plotEnsembleMSD: (*method*) plot MSD graph. **NOTE:** After run the method, `plt.show()` command is required.
+  * saveMSD: (*method*) save MSD data in `./msd/msd_{temp}.txt`.
 
 
 ### einstein.einstein.getDiffusivity (*class*)
@@ -394,18 +400,18 @@ EnsembleEinstein(symbol, prefix, labels, segments, skip, start, end)
 getDiffusivity(symbol, path_xdatcar, skip, segment, start, end, xyz, label, temp)
 ```
 * **Description** : Calculating integrated MSD and mass transport parameters for the given temeratures.
-**Note:** directory names in **path_xdatcar** shoud be in format of **xdatcar.{temp}K**. And the name of XDATCAR and OUTCAR files in **xdatcar.{temp}K** should be in format of **XDATCAR_{label}** and **OUTCAR**.
+**Note:** directory names in `path_xdatcar` shoud be in format of `xdatcar.{temp}K`. And the name of XDATCAR and OUTCAR files in `xdatcar.{temp}K` should be in format of `XDATCAR_{label}` and `OUTCAR`.
 * **Arguments**
   * symbol: (*str*) target atom species. (ex. 'O')
-  * path_xdatcar: (*str*) location of xdatcar folder which contains **xdatcar.{temp}K** directories.
+  * path_xdatcar: (*str*) location of xdatcar folder which contains `xdatcar.{temp}K` directories.
   * skip: (*int; opt*) number of initial steps to be excluded in analysis. **Note:** Since the initial steps are unstable and contain undesirable factors like ballistic transport, excluding some initial steps helps increase the reliability of calculation. (Default: 500)
-  * segment: (*int; opt*) number of segment. For example, if '**segment=2**', the total MD steps are divided into two MD sets, effectively doubling the overall ensemble size.
+  * segment: (*int; opt*) number of segment. For example, if `segment=2`, the total MD steps are divided into two MD sets, effectively doubling the overall ensemble size.
   * skip: (*int; opt*) number of initial steps to be excluded in analysis. **Note:** Since the initial steps are unstable and contain undesirable factors like ballistic transport, excluding some initial steps helps increase the reliability of calculation. (Default: 500)
   * start: (*int; opt*) initial step to be used in linear fitting. (Default: 500)
-  * end: (*int or 'auto'; opt*) final step to be used in linear fitting. If **end='auto'**, the end is automatically set to right end of the MSD graph. (Default: 'auto')
+  * end: (*int or 'auto'; opt*) final step to be used in linear fitting. If `end='auto'`, the end is automatically set to right end of the MSD graph. (Default: 'auto')
   * xyz: (*bool; opt*)  if True, x, y, z component of D is calculated. (Default: False)
-  * label: (*list or 'auto'; opt*) label of XDATCAR files in **xdatcar.{temp}K** directories. (i.e., name of each XDATCAR files should be XDATCAR_{label}) If **label='auto'**, aRPaCa automatically search the labels by exploring the **path_xdatcar** directory. (Default: 'auto')
-  * temp: (*list or 'auto'; opt*) temperatures. Temperatures should be integer. If **temp='auto'**, aRPaCa automatically search the labels by exploring the **path_xdatcar** directory. (using **temp** in **xdatcar.{temp}K**) (Default: 'auto')
+  * label: (*list or 'auto'; opt*) label of XDATCAR files in `xdatcar.{temp}K` directories. (i.e., name of each XDATCAR files should be `XDATCAR_{label}`) If `label='auto'`, aRPaCa automatically search the labels by exploring the `path_xdatcar` directory. (Default: 'auto')
+  * temp: (*list or 'auto'; opt*) temperatures. Temperatures should be integer. If `temp='auto'`, aRPaCa automatically search the labels by exploring the `path_xdatcar` directory. (using temp in `xdatcar.{temp}K`) (Default: 'auto')
 * **Attributes**
-  * ensembles: (*list*) a list of integrated ensembles at each temperature. That is each component is object of **EnsembleEinstein**. **Dimension:** same with **temp**
+  * ensembles: (*list*) a list of integrated ensembles at each temperature. That is each component is object of `EnsembleEinstein`. **Dimension:** same with `temp` argument.
 ---

@@ -391,7 +391,7 @@ EnsembleEinstein(symbol, prefix, labels, segments, skip, start, end)
   * diffcoeff_x: (*float*) x component of diffusion coefficient of each atom.
   * diffcoeff_y: (*float*) y component of diffusion coefficient of each atom.
   * diffcoeff_z: (*float*) z component of diffusion coefficient of each atom.
-  * plotEnsembleMSD: (*method*) plot MSD graph. **NOTE:** After run the method, `plt.show()` command is required.
+  * plotEnsembleMSD: (*method*) plot MSD graph. **Note:** After run the method, `plt.show()` command is required.
   * saveMSD: (*method*) save MSD data in `./msd/msd_{temp}.txt`.
 
 

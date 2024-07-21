@@ -96,7 +96,7 @@ from arpaca.einstein import file_manager as fm
 fm.getMDset(path_poscar='ensembles',
             temp=np.arange(1500, 2000+1, 100))
 ```
-The `path_poscar` refers to directory path containing POSCAR files, which are named in format **POSCAR_{label}**.
+The `path_poscar` refers to directory path containing POSCAR files, which are named in format `POSCAR_{label}`.
 The user can get the POSCAR files using `amorphous.xdat2pos` module.
 ```
 # example of ensemble directory
@@ -171,7 +171,7 @@ ein.getDiffusivity(symbol='O',
                    xyz=False # optional; if True, x, y, and z component of D is calcualted.
                   )
 ```
-After running the code, the user will obtain two images (or three if '`xyz=True`). The first imgage is the MSD (mean squred displacemnt) graph.
+After running the code, the user will obtain two images (or three if `xyz=True`). The first imgage is the MSD (mean squred displacemnt) graph.
 According to Einstein relation, MSD and time should have a linear relationship (i.e., $MSD = 6Dt$). Therefore, the user should check that the MSD graphs are sufficiently linear.
 Below is an example of the MSD graph.
 <div align=center>
@@ -299,7 +299,7 @@ genInput(potcar, nsw, potim, temp, charge, ncore)
 ```
 xdat2pos(xdatcar, step)	# to generate one POSCAR
 ```
-* **Description** : Generating POSCAR file from XDATCAR file. POSCAR_step{step} will be generated in the present directory.
+* **Description** : Generating POSCAR file from XDATCAR file. `POSCAR_step{step}` will be generated in the present directory.
 * **Arguments**
   * xdatcar: (*str*) XDATCAR file
   * step: (*int*) step number in MD simulation
@@ -319,7 +319,7 @@ xdat2pos(xdatcar, start, end, step)	# to generate one POSCAR
 ```
 getMDset(path_poscar, temp, label, potcar, nsw, potim, charge, ncore)
 ```
-* **Description** : Generating MD sets using POSCAR files in **path_poscar** directory.
+* **Description** : Generating MD sets using POSCAR files in `path_poscar` directory.
   
 **Note:** The format of name of POSCAR files should be `POSCAR_{label}`, label can be an arbitrary string.
 ```
@@ -380,7 +380,7 @@ EnsembleEinstein(symbol, prefix, labels, segments, skip, start, end)
   * symbol: (*str*) target atom species. (ex. 'O')
   * prefix: (*str*) path where the XDATACR and OUTCAR files exist. (ex. 'xdatcar/xdatcar.2000K/') **Note:** XDATCAR files should be in format of `XDATCAR_{label}` and name of OUTCAR file should be `OUTCAR`
   * labels: (*list*) labels of XDATCAR files.
-  * segments: (*int*) number of segment. For example, if '`segment=2`, the total MD steps are divided into two MD sets, effectively doubling the overall ensemble size.
+  * segments: (*int*) number of segment. For example, if `segment=2`, the total MD steps are divided into two MD sets, effectively doubling the overall ensemble size.
   * skip: (*int*) number of initial steps to be excluded in analysis. **Note:** Since the initial steps are unstable and contain undesirable factors like ballistic transport, excluding some initial steps helps increase the reliability of calculation.
   * start: (*int; opt*) initial step to be used in linear fitting.
   * end: (*int; opt*) final step to be used in linear fitting.

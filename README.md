@@ -385,12 +385,12 @@ EnsembleEinstein(symbol, prefix, labels, segments, skip, start, end)
   * start: (*int; opt*) initial step to be used in linear fitting.
   * end: (*int; opt*) final step to be used in linear fitting.
 * **Attributes**
-  * msd_xyz: (*numpy array*) MSD of each atom (with x, y, z component). **Dimension**: (steps, xyz)
-  * msd: (*numpy array*) MSD of each atom. **Dimension**: (steps, xyz)
-  * diffcoeff: (*float*) diffusion coefficient of each atom.
-  * diffcoeff_x: (*float*) x component of diffusion coefficient of each atom.
-  * diffcoeff_y: (*float*) y component of diffusion coefficient of each atom.
-  * diffcoeff_z: (*float*) z component of diffusion coefficient of each atom.
+  * msd_xyz: (*numpy array*) x, y, z components of MSD. **Dimension**: (steps, xyz)
+  * msd: (*numpy array*) MSD. **Dimension**: (steps, )
+  * diffcoeff: (*float*) diffusion coefficient of each atom. **Note:** Only being calculated when `start` and `end` are specified.
+  * diffcoeff_x: (*float*) x component of diffusion coefficient of each atom. **Note:** Only being calculated when `start` and `end` are specified.
+  * diffcoeff_y: (*float*) y component of diffusion coefficient of each atom. **Note:** Only being calculated when `start` and `end` are specified.
+  * diffcoeff_z: (*float*) z component of diffusion coefficient of each atom. **Note:** Only being calculated when `start` and `end` are specified.
   * plotEnsembleMSD: (*method*) plot MSD graph. **Note:** After run the method, `plt.show()` command is required.
   * saveMSD: (*method*) save MSD data in `./msd/msd_{temp}.txt`.
 

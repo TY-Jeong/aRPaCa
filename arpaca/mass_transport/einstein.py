@@ -612,7 +612,7 @@ class getDiffusivity:
             plt.legend(loc='upper left')
             plt.xlabel('t (ps)', fontsize=13)
             plt.ylabel(r'MSD ($Å^2$)', fontsize=13)
-        plt.savefig('msd.png', dpi=300, transparent=False)
+        plt.savefig('msd.png', dpi=300, transparent=False, bbox_inches="tight")
         plt.show()
         plt.close()
 
@@ -639,7 +639,7 @@ class getDiffusivity:
                  r"$E_a$=%.2f eV"%(Ea), 
                  fontsize=11)
         if disp:
-            plt.savefig('Arrhenius.png', dpi=300, transparent=False)
+            plt.savefig('Arrhenius.png', dpi=300, transparent=False, bbox_inches="tight")
             plt.show()
             plt.close()
 
@@ -684,7 +684,7 @@ class getDiffusivity:
         plt.subplot(326)
         self.plot_Arrhenius(self.diffcoeffs_z, disp=False)
 
-        plt.savefig('Dxyz.png', dpi=300, transparent=False)
+        plt.savefig('Dxyz.png', dpi=300, transparent=False, bbox_inches="tight")
         plt.show()
         plt.close()
 

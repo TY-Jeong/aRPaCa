@@ -1,3 +1,8 @@
-POT_PBE=/home/taeyoung/POT/POT_PBE
-POT_LDA=/home/taeyoung/POT/POT_LDA
+POT_PBE=/home/ysj/program/POT/POT_PBE
+POT_LDA=/home/ysj/program/POT/POT_LDA
 packmol=/home/taeyoung/Downloads/packmol-20.14.3/packmol
+vasp=/home/ysj/vasp.5.4.4/bin/vasp_std
+vaspkit=/home/ysj/program/vaspkit.1.3.5/bin/vaspkit
+qe_pw=/home/ysj/program/qe-6.6/bin/pw.x
+qe_pwcond=/home/ysj/program/qe-6.6/bin/pwcond.x
+mp_api=1JhYvCZohqM8q8YZ5fHCgIHIJZ8a2o35

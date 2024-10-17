@@ -1,0 +1,17 @@
+ALGO = Normal
+AMIN = 0.01
+BMIX = 3
+EDIFF = 1e-06
+EDIFFG = -0.02
+ENCUT = 400.0
+IBRION = 2
+ISIF = 2
+ISMEAR = 0
+LCHARG = False
+LORBIT = 11
+LREAL = Auto
+LWAVE = False
+NCORE = 4
+NSW = 1000
+PREC = Accurate
+SIGMA = 0.01

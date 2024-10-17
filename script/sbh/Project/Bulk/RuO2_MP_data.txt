@@ -1,0 +1,5 @@
+MP_id       Space_group_symbol  Space_group_number
+--------------------------------------------------
+mp-825      P4_2/mnm            136               
+mp-8909     Pa-3                205               
+mp-1008785  Fm-3m               225               

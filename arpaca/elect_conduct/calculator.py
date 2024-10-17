@@ -4,8 +4,8 @@ import subprocess
 import shutil
 import numpy as np
 from distutils.dir_util import copy_tree
-from arpaca.einstein.file_manager import getMDset  ## dependent to einstein; just hardcopy?
-from arpaca.amorphous import genInput 
+from arpaca.utils import getMDset  ## dependent to utils; just hardcopy?
+from arpaca.utils import genInput 
 
 
 class GenRelaxInput(genInput):  # wiil be used in GetKGSet.
@@ -111,6 +111,7 @@ class GetKGSet(getMDset):
 
         for t in self.temp:
             outer_folder = f"{t}K"
+            count = 0
             for l in self.label:
                 # make folder
                 path_dir = os.path.join(outer_folder, f"{l}")
@@ -148,7 +149,7 @@ class GetKGSet(getMDset):
                 replace_text(wave_incar, "LWAVE = .FALSE.", "LWAVE = .TRUE.")
                 replace_text(wave_incar, f"NSW = {self.nsw}", "NSW = 0")
                 replace_text(wave_incar, "ISMEAR = 0", "ISMEAR = -1")
-                replace_text(wave_incar, "SIGMA = 0.01", f"SIGMA = {kT}")
+                replace_text(wave_incar, "SIGMA = 0.01", f"SIGMA = {kT[count]}")
 
 
                 # make 2_nabla folder
@@ -164,7 +165,7 @@ class GetKGSet(getMDset):
                     f.write("NELM = 0")
 
                 # make 3_cond folder
-                omega_path = os.path.join(os.path.dirname(__file__), '../data/conductivity_greekup') 
+                omega_path = os.path.join(os.path.dirname(__file__), '../../data/conductivity_greekup') 
                 copy_tree(omega_path, self.cond_name)
 
                 # return to current path
@@ -213,7 +214,7 @@ class KGCalcStep:
             2: self.after_nabla,
             'nabla': self.after_nabla,
             3: self.after_cond,
-            'cond': self.after_cond
+            'cond': self.after_cond,
             9: self.clean_large_file,
             'clean': self.clean_large_file
         }

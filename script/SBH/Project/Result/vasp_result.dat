@@ -1,9 +1,0 @@
-1.8503                  ! underestimated bandgap [eV] of the bulk semiconductor
-3.0357                  ! corrected bandgap [eV] of the bulk semiconductor
-135.1429                ! er, dielectric constant of the bulk semiconductor
-62.2207                 ! V_DSC [Å], volume of bulk cell
-760.6688                ! V_D0 [Å], volume of interface cell
-38.6375                 ! Lz [Å], length of interface cell along z direction
-5.7464                  ! Lz_int [Å], thickness of interfacial region along z direction
-5.2105                  ! z2 [Å], depth of 2nd layer of semiconductor from metal
-1.0002                  ! (CBM - Fermi level) [eV] of the interface

@@ -1,5 +1,0 @@
-6.4926                  ! alat, the length [Å] of the cell along the z direction for CBS calc.
-1.0000 0.0000 0.0000    ! b1, reciprocal vector for CBS calc.
-0.0000 2.1993 0.0000    ! b2, reciprocal vector CBS calc.
-0.0000 0.0000 1.0000    ! b3, reciprocal vector for CBS calc
-6.4926                  ! cz, the length [Å] of the cell along the z direction for CBS calc.

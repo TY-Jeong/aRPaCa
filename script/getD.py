@@ -5,7 +5,9 @@ path_xdatcar = input('directory containing xdatcar files (ex. xdatcar) : ')
 skip = int(input('skip (int) : '))
 segment = int(input('segment (int) : '))
 start = int(input('start (int) : '))
-xyz = bool(input('calculate xyz component (bool) : '))
+xyz = input('calculate xyz component (True or False) : ')
+xyz = True if xyz=='True' else False
+
 
 getDiffusivity(symbol=symbol,   
                path_xdatcar=path_xdatcar,

@@ -21,11 +21,11 @@ class genAmorphous:
         self.prefix_data = '../data/'
 
         self.atomMass = {}
-        self.read_atomic_mass_table()
+        self.read_atomic_mass()
 
         self.atom_name = []
         self.atom_num = []
-        self.divide_chem_formula()
+        self.read_chem_formula()
 
         # check atom name
         for name in self.atom_name:
@@ -55,12 +55,13 @@ class genAmorphous:
              sys.exit(1)
 
         # write POSCAR
-        self.covert_pdb_to_poscar(outfile)
+        self.covert_pdb2poscar(outfile)
 
         if clear_dummy:
-            self.clear_dummy_files()
+            self.clear_dummy()
 
-    def read_atomic_mass_table(self):
+
+    def read_atomic_mass(self):
         atomic_mass_table_path = os.path.join(os.path.dirname(__file__),
                                               self.prefix_data,'atomic_mass_table.dat')
         if not os.path.isfile(atomic_mass_table_path):
@@ -75,7 +76,8 @@ class genAmorphous:
             name, mass = line.split('\t')
             self.atomMass[name] = float(mass)
 
-    def divide_chem_formula(self):
+
+    def read_chem_formula(self):
         check, word = 'alpha', ''
         for letter in self.chem_formula:
             if letter.isalpha():
@@ -95,6 +97,7 @@ class genAmorphous:
         self.atom_num += [int(word)]
         self.atom_num = np.array(self.atom_num)
 
+
     def get_dimension_cubic(self):
         u  =  1.660539e-24 # g
         mass = [self.atomMass[name]*u for name in self.atom_name]
@@ -103,6 +106,7 @@ class genAmorphous:
         self.alat = (m/self.density)**(1/3)*1e8  # Å
         self.alat_pbc = self.alat*0.98 - 2
 
+
     def write_pdb(self):
         for name in self.atom_name:
             with open(f"./{name}.pdb",'w') as f:
@@ -110,6 +114,7 @@ class genAmorphous:
                 f.write(f"COMPND   1Created by aRPaCa\n")
                 f.write("HETATM    1 %-2s           1       5.000   5.000   5.000\n"%(name))
                 f.write("END")
+
 
     def write_packmol_input(self):
         with open("./packmol.inp",'w') as f:
@@ -123,7 +128,9 @@ class genAmorphous:
                 f.write("  inside cube 0. 0. 0. %.6f \n"%self.alat_pbc)
                 f.write("end structure\n\n")
 
-    def covert_pdb_to_poscar(self, outfile):
+
+    def covert_pdb2poscar(self, 
+                         outfile):
         with open ('packmol_output.pdb','r') as file:
             lines = [line.strip() for line in file]
         num_tot = np.sum(self.atom_num)
@@ -146,12 +153,14 @@ class genAmorphous:
                 coord += np.array([shift, shift, shift])
                 f.write("    %.6f    %.6f   %.6f\n"%(coord[0], coord[1], coord[2]))
     
-    def clear_dummy_files(self):
+    
+    def clear_dummy(self):
         for name in self.atom_name:
             os.remove(f"{name}.pdb")
         os.remove('packmol.inp')
         os.remove('packmol.out')
         os.remove('packmol_output.pdb')
+
 
 
 class genInput:
@@ -184,10 +193,10 @@ class genInput:
         
         # write POTCAR
         self.pot_recommend = {}
-        self.read_recommended_potcar()
+        self.read_pot_recommended()
 
         self.prefix_pot = None
-        self.read_path_potcar()
+        self.read_pot_path()
 
         self.atom_name = None
         self.atom_num = None
@@ -202,7 +211,8 @@ class genInput:
 
         self.write_incar()
 
-    def read_recommended_potcar(self):
+
+    def read_pot_recommended(self):
         recommended_potcar_path = os.path.join(
             os.path.dirname(__file__), self.prefix_data+'recommended_potcar.dat')
         if not os.path.isfile(recommended_potcar_path):
@@ -217,7 +227,8 @@ class genInput:
             name, recommend = line.split('\t')
             self.pot_recommend[name] = recommend
     
-    def read_path_potcar(self):
+    
+    def read_pot_path(self):
         path_dat_path = os.path.join(os.path.dirname(__file__), self.prefix_data+'path.dat')
         if not os.path.isfile(path_dat_path):
             print('path.dat is not found.\n')
@@ -227,8 +238,7 @@ class genInput:
             lines = [line.strip() for line in file]
 
         self.prefix_pot = lines[0].split('=')[1] if self.potcar == 'pbe' else lines[1].split('=')[1]
-        # if self.prefix_pot[-1] != '/':
-        #     self.prefix_pot += '/'
+        
 
     def write_kpoints(self):
         with open('./KPOINTS','w') as f:
@@ -237,6 +247,7 @@ class genInput:
             f.write("G\n")
             f.write("1 1 1\n")
             f.write("0 0 0")
+            
             
     def write_potcar(self):
         if not os.path.isfile('POSCAR'):
@@ -259,6 +270,7 @@ class genInput:
                         self.zval += [float(line.split()[5])]
                     if 'ENMAX' in line:
                         self.enmax += [float(line.split()[2].split(';')[0])]
+
 
     def write_incar(self):
         system = ''
@@ -300,8 +312,12 @@ class genInput:
             f.write('# charge state\n')
             f.write("NELECT = %.3f"%self.nelect)
 
+
+
 class xdat2pos:
-    def __init__(self, xdatcar, *args):
+    def __init__(self, 
+                 xdatcar, 
+                 *args):
         """
         Arg 1: (str) XDATCAR file\n
         Arg 2: (case 1) step (for one POSCAR)\n
@@ -331,6 +347,7 @@ class xdat2pos:
         else:
             print("check your arguments.\nexpected number of argumnets is 2 or 4.")
             sys.exit(0)
+    
     
     def write_poscar(self, step, label, prefix='./'):
         check = False

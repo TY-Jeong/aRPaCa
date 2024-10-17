@@ -1,3 +1,9 @@
-from arpaca.amorphous import *
+## Arguments: [density], [chem_formula]
+import sys
+from arpaca.utils import genAmorphous
 
-genAmorphous(density=10.00, chem_formula="Hf34O68", outfile='POSCAR_Hf34O68')
+density, chem_formula = sys.argv[1], sys.argv[2]
+
+genAmorphous(density=density, 
+             chem_formula=chem_formula, 
+             outfile=f'POSCAR_{chem_formula}')

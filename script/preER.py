@@ -1,4 +1,19 @@
-from arpaca.einstein.file_manager import *
+import numpy as np
+from arpaca.utils import *
 
-getMDset(path_poscar='ensembles',
-         temp=np.arange(1200, 1900+1, 100))
+path_poscar = input('directory containing ensembles (str) : ')
+temp_str = input('temperature range in K (start end step) : ').split()
+temp = np.arange(int(temp_str[0], int(temp_str[1])+1, int(temp_str[2])))
+potcar = input('kind of potcar (lda or pbe) : ')
+nsw = int(input('iteration number (int): '))
+potim = float(input('time step in fs (float): '))
+charge = float(input('charge state of the system (float): '))
+
+
+
+getMDset(path_poscar=path_poscar,
+         temp=temp,
+         potcar=potcar,
+         nsw=nsw,
+         potim=potim,
+         charge=charge)

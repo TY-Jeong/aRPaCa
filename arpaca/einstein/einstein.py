@@ -85,7 +85,7 @@ class EinsteinRelation:
 
         self.potim, self.nblock, lm = 0, 0, 0
         for num, line in enumerate(lines_outcar):
-            if 'POTIM' in line:
+            if 'POTIM ' in line:
                 self.potim = float(line.split()[2])
             if 'NBLOCK' in line:
                 self.nblock = int(line.split()[2].replace(';',''))
@@ -438,7 +438,6 @@ class EnsembleEinstein:
         np.savetxt(filename, data_save)
 
 
-
 class getDiffusivity:
     def __init__(self, 
                  symbol,
@@ -580,7 +579,7 @@ class getDiffusivity:
             plt.ylabel(r'MSD ($Å^2$)', fontsize=13)
         plt.savefig('msd.png', dpi=300, transparent=False)
         plt.show()
-
+        plt.close()
 
     def plotArrhenius(self, diffcoeffs, disp=True):
         kb = 8.617332478E-5 # eV/K
@@ -604,6 +603,7 @@ class getDiffusivity:
         if disp:
             plt.savefig('Arrhenius.png', dpi=300, transparent=False)
             plt.show()
+            plt.close()
 
     def saveD(self):
         with open('D.txt', 'w') as f:
@@ -646,6 +646,7 @@ class getDiffusivity:
 
         plt.savefig('Dxyz.png', dpi=300, transparent=False)
         plt.show()
+        plt.close()
 
     def saveDxyz(self):
         with open('Dxyz.txt', 'w') as f:

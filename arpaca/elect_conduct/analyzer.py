@@ -339,9 +339,9 @@ class CondPlot:
                        c='#66ccff', linewidth=0.5, edgecolors='b', alpha=0.25)
 
 
-conductivity_list = CondAnalyze()
-
-figure, axis = plt.subplots()
-CondPlot(conductivity_list.df, 'error', figure, axis)  # can input the csv file
-CondPlot(conductivity_list.df, 'bubble', figure, axis)  # can input the csv file
-plt.show()
+## usage
+# conductivity_list = CondAnalyze()
+# figure, axis = plt.subplots()
+# CondPlot(conductivity_list.df, 'error', figure, axis)  # can input the csv file
+# CondPlot(conductivity_list.df, 'bubble', figure, axis)  # can input the csv file
+# plt.show()

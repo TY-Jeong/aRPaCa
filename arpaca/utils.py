@@ -597,6 +597,11 @@ class BasicTool:
                     data[key.strip()] = value.strip()
         return data.get(target)
 
+    def set_project_directory(self):
+        self.project_directory = input("Enter project directory name: ")
+        self.make_directory(self.project_directory)
+        self.project_directory = os.path.abspath(self.project_directory)
+
     def make_directory(self, directory):
         if not os.path.exists(directory):
             os.mkdir(directory)
@@ -789,11 +794,9 @@ class GenBulk(BasicTool):
         self.API_KEY = self.read_path_file('mp_api')
         self.root_directory = os.getcwd()
         self.iter = False
-        self.working_directory = self.root_directory + '/Project/Bulk'
+        self.set_project_directory()
 
         if chemsys_formula_mpids != None:
-            self.make_directory('Project')
-            self.make_directory(self.working_directory)
             try:
                 int(chemsys_formula_mpids)
                 chemsys_formula_mpids = int(chemsys_formula_mpids)
@@ -811,7 +814,7 @@ class GenBulk(BasicTool):
             material_ids = mpr.get_material_ids(chemsys_formula)
             for id_ in material_ids:
                 self.mpid_poscar_write(str(id_))
-            print("\n * Structure data log is written in %s"%self.working_directory+'/%s_MP_data.txt *\n'%self.formula)
+            print("\n * Structure data log is written in %s"%self.project_directory+'/%s_MP_data.txt *\n'%self.formula)
 
 
     def mpid_poscar_write(self,mpid):
@@ -820,7 +823,7 @@ class GenBulk(BasicTool):
             entries = mpr.get_entries(mpid)
             formula = entries[0].composition.formula
             self.formula = Composition(formula).reduced_formula
-            self.structure_directory = self.working_directory + '/%s'%self.formula
+            self.structure_directory = self.project_directory + '/%s'%self.formula
 
             self.make_directory(self.structure_directory)
 
@@ -830,13 +833,13 @@ class GenBulk(BasicTool):
             space_group_number = space_group[1]
 
             if not self.iter:
-                with open(self.working_directory+'/%s_MP_data.txt'%self.formula,'w') as MP_data:
+                with open(self.project_directory+'/%s_MP_data.txt'%self.formula,'w') as MP_data:
                     MP_data.write('MP_id       Space_group_symbol  Space_group_number\n')
                     MP_data.write('-'*50+'\n')
                     MP_data.write('%-10s  %-18s  %-18s\n'%(mpid,space_group_symbol,space_group_number))
 
             if self.iter:
-                with open(self.working_directory+'/%s_MP_data.txt'%self.formula,'a') as MP_data:
+                with open(self.project_directory+'/%s_MP_data.txt'%self.formula,'a') as MP_data:
                     MP_data.write('%-10s  %-18s  %-18s\n'%(mpid,space_group_symbol,space_group_number))
 
             print('  -. Writing "%s/POSCAR_%s"'%(self.structure_directory, mpid))
@@ -865,7 +868,7 @@ class GenBulk(BasicTool):
 
         try:
             file_name_mpid = int(file_name_mpid)
-            self.bulk = find_files_with_keyword(self, self.working_directory, 'POSCAR_mp-%s'%file_name_mpid)
+            self.bulk = find_files_with_keyword(self, self.project_directory, 'POSCAR_mp-%s'%file_name_mpid)
         
         except:
             if os.path.isfile(file_name_mpid):
@@ -885,7 +888,7 @@ class GenBulk(BasicTool):
             mp_id = tree.item(item, "values")[0]
             print("Showing selected MP_id: %s"%mp_id)
             self.view_structure(mp_id.replace("mp-",""))
-        file_path = self.working_directory+'/%s_MP_data.txt'%self.formula
+        file_path = self.project_directory+'/%s_MP_data.txt'%self.formula
         with open(file_path, 'r') as f:
             lines = f.readlines()[2:]
             data = []
@@ -926,11 +929,6 @@ class GenBulk(BasicTool):
 class GenSurface(VASPInput):
     def __init__(self, structure_file=None, miller_index=None, layer_num=5, vacuum=15):
         self.check_object_type(structure_file)
-        self.root_directory = os.getcwd()
-        self.make_directory('Project')
-        self.project_directory = self.root_directory + '/Project'
-        self.make_directory('Project/Surface')
-        self.working_directory = self.project_directory + '/Surface'
         self.vacuum = vacuum
         formula = self.structure.get_chemical_formula()
         formula = Composition(formula)
@@ -946,9 +944,11 @@ class GenSurface(VASPInput):
     def check_object_type(self, obj):
         if obj == None:
             self.structure = read(self.open_filedialog())
+            self.set_project_directory()
         elif isinstance(obj, str):
             try:
                 self.structure = read(obj)
+                self.set_project_directory()
             except:
                 print('Error: Check your POSCAR file !!')
                 raise FileNotFoundError
@@ -1001,21 +1001,43 @@ class GenSurface(VASPInput):
         min_z = np.min(self.z_coords)
         self.thickness = max_z - min_z
 
+    def semiconductor_check(self):
+        def on_button_click():
+            if self.var.get() == 1:
+                self.is_semi = True
+            else:
+                self.is_semi = False
+            root.destroy()
+        root = tk.Tk()
+        self.var = tk.IntVar()
+        root.title("Semiconductor check")
+        label = tk.Label(root, text="%s: Semiconductor or not?"%self.formula, font=("Arial", 14))
+        label.pack(pady=20)
+        yes_check = tk.Checkbutton(root, text="Yes", variable=self.var, onvalue=1, offvalue=0, font=("Arial", 12))
+        yes_check.pack(pady=10)
+        no_check = tk.Checkbutton(root, text="No", variable=self.var, onvalue=0, offvalue=1, font=("Arial", 12))
+        no_check.pack(pady=10)
+        btn = tk.Button(root, text="Submit", font=("Arial", 12), command=on_button_click)
+        btn.pack(pady=20)
+        root.mainloop()
 
     def cbs_surface_maker(self, layer_num):
-        self.cbs_slab = surface(self.structure, self.miller_index, layers=layer_num, periodic=True) # layers=self.layer_num, 
-        self.make_poscar('%s/cbs_surface.vasp'%(self.working_directory), self.cbs_slab)
-        print(' &&&&& Generating slab POSCAR for cbs calculation in "%s/cbs_surface.vasp" &&&&&'%(self.working_directory))
-        view(self.cbs_slab)
-        # root = tk.Tk()
-        # root.title("My Custom Title")  # 원하는 제목으로 변경
-        # root.mainloop()
+        self.semiconductor_check()
+        if self.is_semi:
+            self.cbs_slab = surface(self.structure, self.miller_index, layers=layer_num, periodic=True) # layers=self.layer_num, 
+            self.make_poscar('%s/cbs_surface.vasp'%(self.project_directory), self.cbs_slab)
+            print(' &&&&& Generating slab POSCAR for cbs calculation at "%s/cbs_surface.vasp" &&&&&'%(self.project_directory))
+
+    def view_cbs_structure(self):
+        if hasattr(self, 'cbs_slab'):
+            view(self.cbs_slab)
+     
 
     def slab_maker(self):
         self.slab = surface(self.structure, self.miller_index, layers=self.layer_num, vacuum=self.vacuum, periodic=True)
         self.calculate_thickness()
-        print(' * Generating slab POSCAR for %s in "%s/%s_slab-%s.vasp"'%(self.formula, self.working_directory , self.formula, ''.join(map(str, self.miller_index))))
-        self.make_poscar('%s/%s_slab-%s.vasp'%(self.working_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
+        print(' * Generating slab POSCAR for %s at "%s/%s_slab-%s.vasp"'%(self.formula, self.project_directory , self.formula, ''.join(map(str, self.miller_index))))
+        self.make_poscar('%s/%s_slab-%s.vasp'%(self.project_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
         print('  -. %s %s slab thickness is %.2f Å\n'%(self.formula, ''.join(map(str, self.miller_index)),self.thickness))
 
     def slice_slab_direct(self, z_min, z_max):
@@ -1025,7 +1047,7 @@ class GenSurface(VASPInput):
         self.slab = self.slab[mask]
         self.calculate_thickness()
         print(' * Slicing %s slab from z-coordinate from %.2f to %.2f'%(self.formula, z_min, z_max))
-        self.make_poscar('%s/%s_slab-%s.vasp'%(self.working_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
+        self.make_poscar('%s/%s_slab-%s.vasp'%(self.project_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
         print('  -. Sliced %s slab thickness is %.2f Å\n'%(self.formula,self.thickness))
 
     def slice_slab_cartesian(self, z_min=None, z_max=None):
@@ -1075,7 +1097,7 @@ class GenSurface(VASPInput):
         self.slab = self.slab[mask]
         self.calculate_thickness()
         print(' * Slicing %s slab from %.2fÅ to %.2fÅ'%(self.formula, self.z_min, self.z_max))
-        self.make_poscar('%s/%s_slab-%s.vasp'%(self.working_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
+        self.make_poscar('%s/%s_slab-%s.vasp'%(self.project_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
         print('  -. Slice %s slab thickness is %.2f Å\n'%(self.formula,self.thickness))
 
     def xy_shift_direct(self, x, y):
@@ -1083,12 +1105,12 @@ class GenSurface(VASPInput):
         positions_direct += [x, y, 0]
         self.slab.set_scaled_positions(positions_direct)
         print(' * Shifting %s slab by (%f %f 0)\n'%(self.formula, x, y))
-        self.make_poscar('%s/%s_slab-%s.vasp'%(self.working_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
+        self.make_poscar('%s/%s_slab-%s.vasp'%(self.project_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
 
     def xy_shift_cartesian(self, x, y):
         self.slab.translate([x, y ,0])
         print(' * Shifting %s slab by (%f %f 0)\n'%(self.formula, x, y))
-        self.make_poscar('%s/%s_slab-%s.vasp'%(self.working_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
+        self.make_poscar('%s/%s_slab-%s.vasp'%(self.project_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
 
     def view_structure(self):
         view(self.slab)
@@ -1103,16 +1125,9 @@ class GenInterface(VASPInput):
         self.substrate_formula = self.formula
         self.film = self.check_object_type(film_surface)
         self.film_formula = self.formula
+        self.set_project_directory()
         print('\n\n############### Initialize GenInterface to make interface POSCAR for %s/%s ###############\n'%(self.substrate_formula,self.film_formula))
-        
-        self.root_directory = os.getcwd()
-        self.project_directory = self.root_directory + '/Project'
-        self.make_directory(self.project_directory)
-
-        self.working_directory = self.project_directory + '/Interface'
-        self.make_directory(self.working_directory)
-
-        self.editing_directory = self.working_directory + '/Edit'
+        self.editing_directory = self.project_directory + '/Edit'
         self.make_directory(self.editing_directory)
 
 
@@ -1152,14 +1167,14 @@ class GenInterface(VASPInput):
             combined_cell = self.lattice_z_transform(combined_cell, [0, 0, self.vacuum + max_z])
             combined_pbc = self.substrate_supercell.get_pbc()
             self.interface = Atoms(symbols=combined_symbols, positions=combined_positions, cell=combined_cell, pbc=combined_pbc)
-            self.make_poscar("%s/interface.vasp"%self.working_directory, self.interface)
+            self.make_poscar("%s/interface.vasp"%self.project_directory, self.interface)
             view(self.interface)
 
         self.spacing = spacing
         self.vacuum = vacuum
         align_substrate_z0(self)
         align_film_on_substrate(self)
-        print(' * Generating interface POSCAR in "%s/interface.vasp"\n'%(self.working_directory))
+        print(' * Generating interface POSCAR at "%s/interface.vasp"\n'%(self.project_directory))
         create_interface(self)
         return
 
@@ -1347,21 +1362,12 @@ class BulkSet(VASPInput):
         if obj == None:
             obj = self.open_filedialog()
             self.structure = read(obj)
-            self.project_directory = os.getcwd() + '/Project'
-            self.make_directory(self.project_directory)
-            self.root_directory = self.project_directory + '/Bulk'
-            self.make_directory(self.root_directory)
+            self.set_project_directory()
 
-        elif isinstance(obj, GenBulk):
-            self.structure = obj.bulk
-            self.root_directory = obj.working_directory
         elif isinstance(obj, str):
                 try:
                     self.structure = read(obj)
-                    self.project_directory = os.getcwd() + '/Project'
-                    self.make_directory(self.project_directory)
-                    self.root_directory = self.project_directory + '/Bulk'
-                    self.make_directory(self.root_directory)
+                    self.set_project_directory()
                 except:
                     print('Check your bulk POSCAR file path')
                     raise FileNotFoundError
@@ -1369,7 +1375,7 @@ class BulkSet(VASPInput):
             raise TypeError
 
         self.formula = Composition(self.structure.get_chemical_formula()).reduced_formula
-        self.working_directory = self.root_directory + '/%s'%self.formula
+        self.working_directory = self.project_directory + '/%s'%self.formula
         self.make_directory(self.working_directory)
 
     def relax_setup(self, custom_incar_params=None):
@@ -1532,7 +1538,6 @@ class BulkSet(VASPInput):
 
     def runfile_setup(self,runfile_name='run.sh', nodes='2', processors='16', queue_name='Null', scheduler=None):
         self.read_path_vasp()
-
         for dirpath, dirnames, filenames in os.walk(self.working_directory):
             if 'POSCAR' in filenames:
                 self.make_runfile(dirpath+'/'+runfile_name, nodes, processors, queue_name, scheduler=scheduler)
@@ -1548,10 +1553,7 @@ class SurfaceSet(QE_Input):
         return
 
     def check_object_type(self, obj):
-        if isinstance(obj, GenSurface):
-            self.structure = obj.cbs_slab
-            self.working_directory = obj.working_directory
-        elif isinstance(obj, str):
+        if isinstance(obj, str):
                 try:
                     self.structure = read(obj)
                     self.working_directory = obj.replace('/cbs_surface.vasp','')
@@ -1650,16 +1652,10 @@ class InterfaceSet(VASPInput):
         self.dos_setup()
 
     def check_object_type(self, obj):
-        if isinstance(obj, GenInterface):
-            self.structure = obj.interface
-            self.working_directory = obj.working_directory
-        elif isinstance(obj, str):
+        if isinstance(obj, str):
                 try:
                     self.structure = read(obj)
-                    self.project_directory = os.getcwd() + '/Project'
-                    self.make_directory(self.project_directory)
-                    self.working_directory = self.project_directory + '/Interface'
-                    self.make_directory(self.working_directory)
+                    self.set_project_directory()
                 except:
                     print('Check your interface POSCAR file path')
                     raise FileNotFoundError
@@ -1667,7 +1663,7 @@ class InterfaceSet(VASPInput):
             raise TypeError
 
     def relax_setup(self, custom_incar_params=None):
-        self.relax_directory = self.working_directory+'/Relax'
+        self.relax_directory = self.project_directory+'/Relax'
         print(' * Making relaxation calculation set for interface in "%s"\n'%(self.relax_directory))
         incar_params_dict = copy.deepcopy(self.incar_params)
         if custom_incar_params != None:
@@ -1684,7 +1680,7 @@ class InterfaceSet(VASPInput):
         return
 
     def chg_setup(self, custom_incar_params=None):
-        self.chg_directory = self.working_directory+'/Chg'
+        self.chg_directory = self.project_directory+'/Chg'
         print(' * Making CHGCAR calculation set for interface in "%s" \n'%(self.chg_directory))
         if custom_incar_params != None:
             if isinstance(custom_incar_params, dict):
@@ -1706,7 +1702,7 @@ class InterfaceSet(VASPInput):
         return
 
     def dos_setup(self, custom_incar_params=None):
-        self.dos_directory = self.working_directory+'/DOS'
+        self.dos_directory = self.project_directory+'/DOS'
         print(' * Making DOS calculation set for interface in "%s" \n'%(self.dos_directory))
         if custom_incar_params != None:
             if isinstance(custom_incar_params, dict):
@@ -1735,7 +1731,7 @@ class InterfaceSet(VASPInput):
 
     def runfile_setup(self,runfile_name='run.sh', nodes='4', processors='16', queue_name='Null', scheduler=None):
         self.read_path_vasp()
-        for dirpath, dirnames, filenames in os.walk(self.working_directory):
+        for dirpath, dirnames, filenames in os.walk(self.project_directory):
             if 'POSCAR' in filenames:
                 self.make_runfile(dirpath+'/'+runfile_name, nodes, processors, queue_name, scheduler=scheduler)
 

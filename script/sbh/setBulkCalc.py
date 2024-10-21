@@ -13,6 +13,7 @@ if not os.path.isfile(poscar_path):
     exit(1)
 
 Bulk_calc = BulkSet(poscar_path)
+Bulk_calc.runfile_setup(runfile_name='run.sh', nodes='2', processors='24', queue_name='ykh', scheduler='pbs')
 
 # #RuO2_calc = BulkSet()
 # RuO2_calc = BulkSet('Project/Bulk/RuO2/POSCAR_mp-825')

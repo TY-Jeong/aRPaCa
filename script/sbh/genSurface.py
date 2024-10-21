@@ -24,10 +24,11 @@ if not os.path.isfile(contcar_path):
 # RuO2_surface.view_structure()
 
 # #TiO2_surface=GenSurface('Project/Bulk/TiO2/Relax/CONTCAR', (1,1,0), layer_num = 9, vacuum=15)
-TiO2_surface=GenSurface(contcar_path, layer_num = 9, vacuum=15)
-TiO2_surface.slice_slab_cartesian(20.2, 42.6)
+surface=GenSurface(contcar_path, layer_num = 9, vacuum=15)
+surface.slice_slab_cartesian(20.2, 42.6)
 #TiO2_surface.xy_shift_direct(0.5,0.5)
-TiO2_surface.view_structure()
+surface.view_structure()
 
-time.sleep(2)
-TiO2_surface.cbs_surface_maker(layer_num = 2)
+time.sleep(4)
+surface.cbs_surface_maker(layer_num = 2)
+surface.view_cbs_structure()

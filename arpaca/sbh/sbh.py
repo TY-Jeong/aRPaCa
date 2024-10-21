@@ -7,7 +7,7 @@ from scipy.integrate import simpson
 from scipy.interpolate import CubicSpline
 import sys
 
-from sbh.generate_input import *
+from arpaca.utils import *
 
 
 class ReadResult(BasicTool):
@@ -247,6 +247,7 @@ def array_plot(x,y,x_lim=[0,10],y_lim=[0,1e-16]):
     
     plt.title('Plot of given data')
     plt.grid(True)
+    plt.savefig('plot.png', dpi=300)
     plt.show()
 
 class ElecSpline(ReadResult):
@@ -297,6 +298,7 @@ class ElecCalculator(ElecSpline):
         print("\n\n############### Computing electrical properties ###############\n")
         kb = 8.6173430060e-5
         self.kbT = kb * Temperature
+        self.Temperature = Temperature
         self.CNL = self.calc_CNL()
         self.calc_zero_EF()
         self.calc_po00()
@@ -442,19 +444,19 @@ class SBCalculator(ElecCalculator):
         self.Nitscf0 = 4
         self.Nitscf1 = 3
         self.Nitscf2 = 1
-
         print("\n\n############### Launching self-consistent iteration cycle ###############\n")
-        print("iter     SBH      -eV(0)   dV/dz(er*e0)   poh_m        poe_m       poMe_m       po(0)     delta_po     delta_V")
+        print(" iter     SBH      -eV(0)   dV/dz(er*e0)  po(0)     delta_po     delta_V")
         self.set_limits_zz1()
         self.set_initial_deltaE()
         for is_ in range(1, self.Nitscf + 1):
             self.Nitscf20 = 1
             self.L_pre = True
             for is0 in range(1, self.Nitscf0 + 1):
+                self.min_delta_V = np.inf
                 Lsuc1, Lsuc2 = self.calc_look_po_z(is0, self.zz1, self.zz2)
                 
                 if Lsuc1 and Lsuc2:
-                    print(f"\nThe approximate solution is found at %d cycle of pre SCF cycle using %d iterations\n"%(is0, self.iter))
+                    print(f"\nThe approximate solution is found with pre SCF cycle using %d iterations\n"%(self.iter))
                     break
                 elif (not Lsuc1 or not Lsuc2) and is0 == self.Nitscf0:
                     self.print_scf_error(is0, self.zz1, self.zz2, Lsuc1, Lsuc2)
@@ -464,9 +466,10 @@ class SBCalculator(ElecCalculator):
             self.Nitscf20 = self.Nitscf2
             self.L_pre = False
             for is1 in range(1, self.Nitscf1 + 1):
+                self.min_delta_V = np.inf
                 Lsuc1, Lsuc2 = self.calc_look_po_z(is1, self.zz1, self.zz2)
                 if Lsuc1 and Lsuc2:
-                    print(f"\nThe accurate solution is found at %d cycle of post SCF cycle using %d iterations\n"%(is1, self.iter))
+                    print(f"\nThe accurate solution is found with post SCF cycle using %d iterations\n"%(self.iter))
                     break
                 elif (not Lsuc1 or not Lsuc2) and is1 == self.Nitscf1:
                     self.print_scf_error(is1, self.zz1, self.zz2, Lsuc1, Lsuc2)
@@ -481,7 +484,7 @@ class SBCalculator(ElecCalculator):
         pos_list = np.zeros(self.Nz)
         for i in range(self.Nz):
             pos_list[i] = self.pos(self.Zz[i])
-        Sig2 = simps(pos_list, self.Zz)
+        Sig2 = np.trapz(pos_list, self.Zz)
         self.Sig = -Sig2 - self.Sig_gate  
     
     def calc_deltaE(self):
@@ -598,10 +601,8 @@ class SBCalculator(ElecCalculator):
     def calc_look_po_z(self, Natmpt, za1, za2):
         eps = 0.0001
         Nitmax = 600
-
         a, b = za1, za2
-        Lsuc1, Lsuc2 = True, True
-    
+        self.Lsuc1, self.Lsuc2 = True, True
         while abs(a - b) > eps:
             self.iter += 1
             
@@ -611,7 +612,10 @@ class SBCalculator(ElecCalculator):
     
             self.za = (a + b) / 2.0
             self.calc_diff_eV0()
-    
+
+            if self.min_delta_V > self.delta_V:
+                self.min_delta_V = self.delta_V
+
             if self.EFermi1 > self.CNL + self.dEf:
                 if self.diffV > 0.0:
                     b = self.za
@@ -622,23 +626,19 @@ class SBCalculator(ElecCalculator):
                     b = self.za
                 else:
                     a = self.za
-    
+
         if abs(self.za - za1) <= 0.01:
-            if Natmpt != self.Nitscf0:
-                print("***** ERROR ***** za is too close to za1")
-                print('za: %s'%self.za)
-                print('za1:%s'%za1)
-            Lsuc1 = False
+            self.Lsuc1 = False
         elif abs(self.za - za2) <= 0.01:
-            if Natmpt != self.Nitscf0:
-                print("***** ERROR ***** za is too close to za2")
-                print('za: %s'%self.za)
-                print('za1:%s'%za2)
-            Lsuc2 = False
+            self.Lsuc2 = False
+
+        if self.min_delta_V < 1e-2:
+            self.Lsuc1 = True
+            self.Lsuc2 = True
     
-        return Lsuc1, Lsuc2
+        return self.Lsuc1, self.Lsuc2
     
-    def calc_diff_eV0(self):
+    def calc_diff_eV0(self): 
         self.set_initial_po_V()
         self.spline_start_2(self.V_eln, self.po_new)
         self.learning_rate = 0.02
@@ -658,12 +658,10 @@ class SBCalculator(ElecCalculator):
             self.SBH = abs(-self.V_eln[0]) + self.EFermi1 - self.EVBM
         
 
-        print("%3d  %9.5f  %9.5f  %.5e  %.4e  %.4e  %.4e  %.4e  %.4e  %.4e" %(self.iter,self.SBH, -self.V_eln[0], self.dVn0, 
-              self.poh_max * 1e24, self.poe_max * 1e24, self.poMe_max * 1e24, self.po_new[0] * 1e24, 
+        print(" %-3d  %9.5f  %9.5f  %.5e  %.4e  %.4e  %.4e" %(self.iter,self.SBH, -self.V_eln[0], self.dVn0, self.po_new[0] * 1e24, 
               self.delta_po * 1e24, self.delta_V))
     
     def set_initial_po_V(self):
-        er11 = self.er
         a_init = 1.0 / self.za
         V0 = -(self.EFermi1 - self.CNL)
         self.po_new = np.zeros(self.Nz)
@@ -871,10 +869,6 @@ class SBCalculator(ElecCalculator):
         self.El_f2[1] = self.El_f2[2] - (self.El_f2[3] - self.El_f2[2]) * (self.Zz[2] - self.Zz[1]) / (self.Zz[3] - self.Zz[2])
         self.El_f2[0] = self.El_f2[1] - (self.El_f2[2] - self.El_f2[1]) * (self.Zz[1] - self.Zz[0]) / (self.Zz[2] - self.Zz[1])
     
-        #dV0 = dV[0]
-        #spline(Zz, dV,self.bsplx,self.csplx,self.dsplx,10)
-        #ddV0 = bsplx[0]
-    
         for i in range(self.Nz):
             self.V_eln[i] = (self.alfa) * self.V_el0[i] + (1-self.alfa) * self.V_el1[i]
         #self.V_eln = self.V_el1
@@ -891,12 +885,19 @@ class SBCalculator(ElecCalculator):
     
 
 class SBPlot(SBCalculator):
-    def __init__(self, result_path, Temperature=300):
+    def __init__(self, result_path, Temperature=300):#, test=True):
+        # if test:
+        #     result = ReadResult(result_path)
+        #     self.EFermi1 = result.EFermi_input
+        #     self.ECBM = result.ECBM
+        #     self.plot_results()
+        #     return
         super().__init__(result_path)
-        print("\n\n############### Launching self-consistent iteration cycle ###############\n")
+        print("\n\n############### Plotting Schottky Barrier (SB) results ###############\n")
         self.calc_ILW()
         self.calc_DLW()
         self.write_results()
+        self.plot_results()
         self.print_results()
 
     def calc_ILW(self):
@@ -909,11 +910,11 @@ class SBPlot(SBCalculator):
     
         s0 = 1.0e20
         y_list = []
-        for i in range(Nz):
+        for i in range(self.Nz):
             if self.L_p_type:
-                s1 = abs(self.po_e[i] - (po0 / ee))
+                s1 = abs(self.po_e[i] - (po0 / math.e))
             elif self.L_n_type:
-                s1 = abs(self.po_h[i] - (po0 / ee))
+                s1 = abs(self.po_h[i] - (po0 / math.e))
                 y_list.append(s1)
                 #print('s1',s1)
             else:
@@ -924,16 +925,18 @@ class SBPlot(SBCalculator):
                 s0 = s1
         y_list = np.array(y_list)
         self.ILW = self.Zz[im]
+        self.ilw_conversion_factor, self.ilw_unit = self.convert_length(self.ILW)
+        self.ILW = self.ILW * self.ilw_conversion_factor
     
     def calc_DLW(self):
         po0 = -self.po00
         s0 = 1.0e20
         y_list = []
-        for i in range(Nz):
+        for i in range(self.Nz):
             if self.L_p_type:
-                s1 = abs((self.po_h[i] - self.po00) - (po0 / ee))
+                s1 = abs((self.po_h[i] - self.po00) - (po0 / math.e))
             elif self.L_n_type:
-                s1 = abs((self.po_e[i] - self.po00) - (po0 / ee))
+                s1 = abs((self.po_e[i] - self.po00) - (po0 / math.e))
                 y_list.append(s1)
             else:
                 s1 = 0.0
@@ -943,41 +946,86 @@ class SBPlot(SBCalculator):
                 s0 = s1
         y_list = np.array(y_list)
         self.DLW = self.Zz[im]
+        self.dlw_conversion_factor, self.dlw_unit = self.convert_length(self.DLW)
+        self.DLW = self.DLW * self.dlw_conversion_factor
         
     def write_results(self):
-        with open('potential.dat', 'w') as f1:
-            f1.write(' %d     !  "z", "poh", "poe", "poMIGS", "po"\n'%Nz)
-            for i in range(Nz):
-                f1.write(f"%.5f   %.10f   %.5e\n"%(self.Zz[i], -self.V_eln[i], self.El_f2[i]))
+
+        with open('potential.dat', 'w') as potential_file:
+            potential_file.write(' %d     !  "z (Å)", "Potential (eV)"\n'%self.Nz)
+            for i in range(self.Nz):
+                potential_file.write(f"%.5f   %.10f\n"%(self.Zz[i], -self.V_eln[i]))
     
-        with open('po.dat', 'w') as f2:
-            f2.write(' %d     !  "z", "poh", "poe", "poMIGS", "po"\n'%Nz)
-            for i in range(Nz):
-                f2.write(f"%.5f  %.12e  %.12e  %.12e  %.12e\n"%(self.Zz[i], self.po_h[i] * 1e24, self.po_e[i] * 1e24, self.po_MIGS[i] * 1e24, self.po_new[i] * 1e24))
-        
-        
+        with open('chg_density.dat', 'w') as chg_density_file:
+            chg_density_file.write(' %d     !  "z (Å)", "Chg density (cm$^-3)"\n'%self.Nz)
+            for i in range(self.Nz):
+                chg_density_file.write(f"%.5f  %.12e\n"%(self.Zz[i], self.po_new[i] * 1e24))
+
+        if self.L_n_type:
+            self.SB_potential = -self.V_eln + self.ECBM - self.EFermi1
+        elif self.L_p_type:
+            self.SB_potential = -self.V_eln + self.EFermi1 - self.EVBM
+
+        with open('sb_profile.dat', 'w') as sb_profile_file:
+            sb_profile_file.write(' %d     !  "z (Å)", "SB profile (eV)"\n'%self.Nz)
+            for i in range(self.Nz):
+                sb_profile_file.write(f"%.5f  %.12e\n"%(self.Zz[i], self.SB_potential[i]))
+
+    def plot_results(self):
+        # potential_data = np.genfromtxt('potential.dat', skip_header=1)
+        # chg_density_data = np.genfromtxt('po.dat', skip_header=1)
+        # self.Zz = potential_data[:, 0]
+        # self.V_eln = - potential_data[:, 1]
+        # # chg_density_data[:, 0]
+        # self.po_new = -chg_density_data[:, 1]
+        # self.DLW = 27999021.70
+
+        conversion_factor, unit = self.convert_length(max(self.Zz))
+        self.Zz = conversion_factor * self.Zz
+        self.SB_potential = -self.V_eln + self.ECBM - self.EFermi1
+
+        fig, ax1 = plt.subplots()
+        line1, = ax1.plot(self.Zz, -self.V_eln, 'g--', label='Electrical potential')
+        ax1.set_xlabel('Depth from interface (%s)'%unit)
+        ax1.set_ylabel('Energy (eV)', color='g')
+        ax1.tick_params(axis='y', labelcolor='g')
+        line2, = ax1.plot(self.Zz, self.SB_potential, 'g-', label='SB Profile')
+        ax2 = ax1.twinx()
+        line3, = ax2.plot(self.Zz, self.po_new, 'b-', label='Charge Density')
+        ax2.set_ylabel('Charge Density (cm$^{-3}$)', color='b')
+        ax2.tick_params(axis='y', labelcolor='b')
+        lines = [line1, line2, line3]
+        labels = [line1.get_label(), line2.get_label(), line3.get_label()]
+        ax1.legend(lines, labels, loc='center right', bbox_to_anchor=(1, 0.5), borderaxespad=0.5)
+        plt.xlim(0, self.DLW)
+        plt.title('SB results')
+        plt.savefig('SB_results.png', dpi=300, bbox_inches='tight', pad_inches=0.1)
+        #plt.show()
+
+
+    def convert_length(self, length_angstrom):
+        length_meter = length_angstrom * 1e-10
+        if length_meter >= 1e-6:
+            return 1e-4, "µm"
+        elif length_meter >= 1e-9:
+            return 1e-1, "nm"
+        else:
+            return 1, "Å"
+
     def print_results(self):
         E_00 = -(self.V_eln[3] - self.V_eln[2]) / (self.Zz[3] - self.Zz[2])
         P_00 = self.kappa * E_00
     
-        print("Temperature                                               = %15.3f K"%self.Temp)
-        print("Doping concentration                                 po00 = %15.4e cm-3"%(self.po00*1e24))
-        print("Fermi level                                        EFermi = %15.5f eV"%self.EFermi1)
+
+        print("Fermi level of bulk semiconductor               EFermi_00 = %15.5f eV"%self.EFermi_00)
+        print("Conduction bandminimum of semiconductor              ECBM = %15.5f eV"%self.ECBM)
         print("Charge neutrality level for interface vs VBM          CNL = %15.5f eV"%self.CNL)
-        print("Fermi level for intrinsic semiconductor         EFermi_00 = %15.5f eV"%self.EFermi_00)
         print("Schottky barrier height                               SBH = %15.5f eV"%self.SBH)
         print("Amplitude of Schottky potential energy               -eV0 = %15.5f eV"%-self.V_eln[0])
-        print("Energy filling level on the surface               delta E = %15.5e eV"%self.dEf)
+        # print("Energy filling level on the surface               delta E = %15.5e eV"%self.dEf)
         print("Charge on the interface                               Sig = %15.5e cm-2"%(self.Sig*1e16))
-        print("Electric field close to the surface of semiconductor E(0) = %15.5e V/A"%E_00)
-        print("Polarization close to the surface of semiconductor   P(0) = %15.5e e/A^2"%P_00)
-        print("Depletion layer width                                 DLW = %15.2f A"%self.DLW)
-        print("Inversion layer width                                 ILW = %15.2f A"%self.ILW)
+        # print("Electric field close to the surface of semiconductor E(0) = %15.5e V/A"%E_00)
+        # print("Polarization close to the surface of semiconductor   P(0) = %15.5e e/A^2"%P_00)
+        print("Depletion layer width                                 DLW = %15.2f %s"%(self.DLW, self.dlw_unit))
+        print("Inversion layer width                                 ILW = %15.2f %s"%(self.ILW, self.ilw_unit))
         print("\nNORMAL TERMINATION")
-
-
-#test = SBCalculator(result_path='../script/SBH/Project/', Temperature = 300)
-
-#test = SBCalculator(result_path='/home/ysj/program/SB/Examples/GaAs-Gr/project', Temperature = 300)
-
-test = SBPlot(result_path='../script/SBH/Project/', Temperature = 300)

@@ -582,7 +582,7 @@ def extract_force(file_in,
 # SBH part
 class BasicTool:
     def __init__(self):
-        self.prefix_data = '../../data'
+        self.prefix_data = '../data'
         self.path_dat_path = os.path.join(os.path.dirname(__file__), self.prefix_data, 'path.dat')
         if not os.path.isfile(self.path_dat_path):
             print('Error: path.dat is not found.\n')

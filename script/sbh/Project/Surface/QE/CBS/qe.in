@@ -1,12 +1,12 @@
  &inputcond
-	prefixl = scf
-	band_file = cbs
-	ikind = 0
-	energy0 = 2.000000
-	denergy = -0.020000
-	ewind = 4.0
-	epsproj = 1.d-8
-	nz1 = 11
+   prefixl = scf
+   band_file = cbs
+   ikind = 0
+   energy0 = 2.000000
+   denergy = -0.020000
+   ewind = 4.0
+   epsproj = 1.d-8
+   nz1 = 11
  /
 28
 0.00000000000000 0.00000000000000 1

@@ -7,4 +7,4 @@
 NUMBER=`wc -l < $PBS_NODEFILE`
 cd $PBS_O_WORKDIR
 
-mpirun -np $NUMBER /home/ysj/program/qe-6.6/bin/pwcond.x < qe.in > stdout.dat
+mpirun -np $NUMBER /home/share/qe-6.6/bin/pwcond.x < qe.in > stdout.dat

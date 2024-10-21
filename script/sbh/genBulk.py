@@ -1,8 +1,18 @@
-from arpaca.generate_input import *
+#!/usr/bin/env python
+from arpaca.utils import *
+import argparse
 
-RuO2=GenBulk('RuO2')
-TiO2=GenBulk('TiO2')
+parser = argparse.ArgumentParser(description='Process chemical formula input.')
+parser.add_argument('-f', '--formula', type=str, required=True, help='Chemical formula to process')
+args = parser.parse_args()
+chem_formula = args.formula
+print(f"Chemical formula provided: {chem_formula}")
 
-# ## TiO2=GenBulk(2657)
-# ## RuO2.set_bulk('825')
-# ## TiO2.set_bulk('2657')
+Crystal = GenBulk(chem_formula)
+Crystal.view_data()
+
+# RuO2=GenBulk('RuO2')
+# RuO2.view_data()
+# TiO2=GenBulk('TiO2')
+# TiO2.view_data()
+

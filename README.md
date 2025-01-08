@@ -7,7 +7,7 @@
 * Tools for **structure generation**.
     * Amorphous generation
     * Interface generation
-*  **Diffusion coefficient** calculation using *ab initio* molecular dynamics
+*  **Diffusion coefficient** calculation using *ab initio* molecular dynamics (AIMD)
     * Effecitve diffusion parameters (crystalline only)
     * Diffusion coefficient using Einstein relation (crystalline and amorphous)
 * **Schottky profile** of metal/oxide interface

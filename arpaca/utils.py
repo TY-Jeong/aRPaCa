@@ -541,7 +541,7 @@ class xdat2pos:
             
             
 def extract_force(file_in, 
-                  file_out='force.dat'):
+                  file_out='FORCE'):
     """
     extract force profile from vasprun.xml
     """

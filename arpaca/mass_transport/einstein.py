@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from colorama import Fore   # color map for tqdm
 
+BOLD = '\033[1m'
+CYAN = '\033[36m'
+MAGENTA = '\033[35m'
 GREEN = '\033[92m' # Green color
 RED = '\033[91m'   # Red color
 RESET = '\033[0m'  # Reset to default color
@@ -77,7 +80,6 @@ class EinsteinRelation:
         if self.verbose:
             self.plot_msd()
     
-    
     def read_outcar(self):
         if self.verbose:
             print(f"reading {self.outcar}...")
@@ -98,7 +100,6 @@ class EinsteinRelation:
         if self.verbose:
             print(f"\tpotim = {self.potim}")
             print(f"\tnblock = {self.nblock}\n")
-    
     
     def read_xdatcar(self):
         if self.verbose:
@@ -130,13 +131,11 @@ class EinsteinRelation:
         if self.verbose:
             print(f"\tshape of position = {self.position.shape} #(nsw, number of atom, xyz)\n")
 
-
     def list_symbol(self):
         self.ChemSymb = []
         for i in range(self.Ntype):
             self.ChemSymb += [np.tile(self.TypeName[i], self.Nelem[i])]
         self.ChemSymb = np.concatenate(self.ChemSymb)
-    
     
     def get_msd(self):
         # length of segment
@@ -176,10 +175,9 @@ class EinsteinRelation:
                     labelst = np.sum(self.Nelem[:j])
                 labeled = np.sum(self.Nelem[:j+1])
                 self.msd[i,j,:,:] = np.average(displacementC[:,labelst:labeled,:], axis=1) 
-
+                
         if self.verbose:
             print(f"\tshape of msd = {self.msd.shape} #(segment, number of type, nsw - skip, xyz)\n")
-                
                 
     def get_diffcoeff(self):
         self.diffcoeff = np.zeros(shape=(self.segments, self.Ntype, 3))
@@ -205,9 +203,8 @@ class EinsteinRelation:
                                 deg=1)
                         
         # standard deviation of D over segments for x,y,z directions
-        self.diffcoeff /= 2      # x, y, z 각각에 대해 계산되었음 -> 1차원임 -> 2로 나누어짐
+        self.diffcoeff /= 2
         self.ddiffcoeff = np.std(self.diffcoeff, axis=0) / 2
-    
     
     def get_msd_atom(self, 
                      symbol):
@@ -217,8 +214,7 @@ class EinsteinRelation:
         else:
             print("No matched atom!")
             return None
-        
-        
+         
     def plot_msd(self):
         time = np.arange(self.skip, self.Niter) * self.potim / 1000
         for type in self.TypeName:
@@ -229,7 +225,6 @@ class EinsteinRelation:
         # plt.ylabel(r'$<\Delta r^{2}> (Å^2)$', fontsize=13)
         plt.legend(fontsize=13)
         plt.show()
-
 
 
 class EnsembleEinstein:
@@ -289,7 +284,6 @@ class EnsembleEinstein:
             _, __ = self.get_ensembleD_y()
             _, __ = self.get_ensembleD_z()
 
-
     def get_ensemble_msd(self):
         desc = self.prefix.split('/')[-1] if len(self.prefix.split('/')[-1]) > 0 \
             else  self.prefix.split('/')[-2]
@@ -316,7 +310,6 @@ class EnsembleEinstein:
         self.msd_xyz = np.mean(self.msd_xyz, axis=0)
         self.msd = np.sum(self.msd_xyz, axis=1)
         self.timestep = np.arange(self.msd[:].shape[0]) * self.potim * self.nblock / 1000
-
 
     def get_ensembleD(self, 
                       *args):
@@ -348,7 +341,6 @@ class EnsembleEinstein:
         plt.xlabel('t (ps)', fontsize=13)
         plt.ylabel(r'MSD ($Å^2$)', fontsize=13)
 
-
     def get_ensembleD_x(self, 
                         *args):
         if len(args) == 2:
@@ -362,7 +354,6 @@ class EnsembleEinstein:
                                                         1E-5*self.msd_x[self.start:self.end],
                                                         deg=1)
         return self.diffcoeff_x, self.intercept_x
-    
     
     def plot_ensemble_msd_x(self):
         temp = self.prefix.split('/')[-2].split('.')[-1]
@@ -383,7 +374,6 @@ class EnsembleEinstein:
         plt.xlabel('t (ps)', fontsize=13)
         plt.ylabel(r'MSD ($Å^2$)', fontsize=13)
 
-
     def get_ensembleD_y(self, 
                         *args):
         if len(args) == 2:
@@ -397,7 +387,6 @@ class EnsembleEinstein:
                                                         1E-5*self.msd_y[self.start:self.end],
                                                         deg=1)
         return self.diffcoeff_y, self.intercept_y
-    
     
     def plot_ensemble_msd_y(self):
         temp = self.prefix.split('/')[-2].split('.')[-1]
@@ -418,7 +407,6 @@ class EnsembleEinstein:
         plt.xlabel('t (ps)', fontsize=13)
         plt.ylabel(r'MSD ($Å^2$)', fontsize=13)
 
-
     def get_ensembleD_z(self, 
                         *args):
         if len(args) == 2:
@@ -432,7 +420,6 @@ class EnsembleEinstein:
                                                         1E-5 * self.msd_z[self.start:self.end],
                                                         deg=1)
         return self.diffcoeff_z, self.intercept_z
-    
     
     def plot_ensemble_msd_z(self):
         temp = self.prefix.split('/')[-2].split('.')[-1]
@@ -453,7 +440,6 @@ class EnsembleEinstein:
         plt.xlabel('t (ps)', fontsize=13)
         plt.ylabel(r'MSD ($Å^2$)', fontsize=13)
     
-    
     def save_msd(self):
         if not os.path.isdir('msd'):
             os.mkdir('msd')
@@ -465,7 +451,6 @@ class EnsembleEinstein:
         temp = self.prefix.split('/')[-2].split('.')[-1]
         filename = prefix+'msd_'+temp+'.txt'
         np.savetxt(filename, data_save)
-
 
 
 class getDiffusivity:
@@ -573,7 +558,6 @@ class getDiffusivity:
             self.plot_xyz()
             self.save_Dxyz()
 
-
     def get_ensembles(self):
         for t in tqdm(self.temp, 
                       bar_format='{l_bar}%s{bar:35}%s{r_bar}{bar:-10b}'% (Fore.GREEN, Fore.RESET),
@@ -589,22 +573,17 @@ class getDiffusivity:
             self.ensembles += [ensemble]
             ensemble.save_msd()
 
-
     def get_D(self):
         self.diffcoeffs = [ensemble.diffcoeff for ensemble in self.ensembles]
-
 
     def get_Dx(self):
         self.diffcoeffs_x = [ensemble.diffcoeff_x for ensemble in self.ensembles]
 
-
     def get_Dy(self):
         self.diffcoeffs_y = [ensemble.diffcoeff_y for ensemble in self.ensembles]
 
-
     def get_Dz(self):
         self.diffcoeffs_z = [ensemble.diffcoeff_z for ensemble in self.ensembles]
-
 
     def plot_msd(self):
         for ensemble in self.ensembles:
@@ -615,7 +594,6 @@ class getDiffusivity:
         plt.savefig('msd.png', dpi=300, transparent=False, bbox_inches="tight")
         plt.show()
         plt.close()
-
 
     def plot_Arrhenius(self, 
                        diffcoeffs, 
@@ -643,7 +621,6 @@ class getDiffusivity:
             plt.show()
             plt.close()
 
-
     def save_D(self):
         with open('D.txt', 'w') as f:
             f.write(f"Ea = {self.Ea} eV\n")
@@ -651,7 +628,6 @@ class getDiffusivity:
             f.write("T (K) \tD (m2/s)\n")
             for t, D in zip(self.temp, self.diffcoeffs):
                 f.write(f"{t}\t{D}\n")
-
 
     def plot_xyz(self):
         figsize = (10,15)
@@ -688,7 +664,6 @@ class getDiffusivity:
         plt.show()
         plt.close()
 
-
     def save_Dxyz(self):
         with open('Dxyz.txt', 'w') as f:
             f.write("x-component\n")
@@ -710,201 +685,157 @@ class getDiffusivity:
             f.write("\n")
 
 
-
-class CompareNEB:
-    def __init__(self):
-        self.kb = 8.617332478e-5 # eV/K
-
-        # data from Einstein relation
-        self.D_ER = []
-
-        # site information
-        self.site = []
-        self.site_name = []
-        self.site_E = []
-
-
-    def add_Einstein(self, 
-                     temp, 
-                     D):
-        if len(temp) != len(D):
-            print("length of temp and D should be the same.")
-            sys.exit(0)
+class MSD:
+    def __init__(self,
+                 data,
+                 symbol,
+                 tmax,
+                 skip=0,
+                 start=1):
+        '''
+        Calculate MSD at temperatures in data.
+        Arguments:
+            data : instance of dataInfo
+            tmax : x-axis of msd plot (ps)
+            skip : steps to be skipped (ps)
+            start :  (ps)
+        '''
+        print(f'{CYAN}{BOLD}Diffusion coefficient from Einstein relation.{RESET}')
+        self.data = data
+        self.tmax = tmax
+        self.skip = skip
+        self.start = start
+        self.symbol = symbol
+        # self.x_vac = x_vac
         
-        for t, d in zip(temp, D):
-            dic_D = {}
-            dic_D['T'] = t
-            dic_D['D'] = d
-
-            self.D_ER.append(dic_D)
-
-
-    def print_Einstein(self):
-        D_ER_sorted = sorted(self.D_ER,
-                             key=lambda x:list(x.values()))
+        self.msd = []
+        self.D = []
+        self.runEnsembleEinstein()
+        self.saveMSD()
+        # self.D /= x_vac
         
-        print("T(K)\tD(m2/s)")
-        for dic_D in D_ER_sorted:
-            print("%d"%dic_D['T'], end='\t')
-            print("%.2e"%dic_D['D'])
-
-
-    def add_site(self, 
-                 site, 
-                 E):
-        if len(site) != len(E):
-            print("length of site and E should be the same.")
-            sys.exit(0)
+        self.plot_results()
         
-        for name, energy in zip(site, E):
-            if name in self.site_name:
-                print(f"{name} already exsits.")
-                sys.exit(0)
-            dic_site = {}
-            dic_site['name'] = name
-            dic_site['E'] = energy
-            dic_site['d'] = []
-            dic_site['Ea'] = []
-            dic_site['z'] = []
-
-            self.site_name.append(name)
-            self.site_E.append(energy)
-            self.site.append(dic_site)
-
-
-    def add_path(self, 
-                 init_site, 
-                 distance, 
-                 Ea, 
-                 z):
-        num_path = len(init_site)
-
-        for i in range(num_path):
-            if not init_site[i] in self.site_name:
-                print(f"{init_site[i]} is not defined.")
+    def runEnsembleEinstein(self):
+        desc = 'Einstein'
+        for i, T in enumerate(
+            tqdm(self.data.temp, 
+                 bar_format='{l_bar}%s{bar:35}%s{r_bar}{bar:-10b}'% (Fore.GREEN, Fore.GREEN),
+                 ascii=False,
+                 desc=f'{GREEN}{BOLD}{desc:>9s}')):
+            path_dir = os.path.join(self.data.prefix1, f'{self.data.prefix2}.{T}K')
+            step_skip = int(self.skip * 1000 / self.data.potim[i])
+            step_tmax = int(self.tmax * 1000 / self.data.potim[i])
+            step_start = int(self.start * 1000 / self.data.potim[i])
+            step_end = int(self.tmax * 1000 / self.data.potim[i])
+            
+            if (self.data.nsw[i] - step_skip) % step_tmax != 0:
+                print(f'The MD time is not divided by the tmax. (T={T} K)')
+                time_tot = self.data.nsw[i] * self.data.potim[i] / 1000
+                print(f'  total MD time = {time_tot} ps ({self.data.nsw[i]} step)')
+                print(f'  skip = {self.skip} ps ({step_skip} step)')
+                print(f'  tmax = {self.tmax} ps ({step_tmax} step)')
+                print(f'  ({self.data.nsw[i]} - {step_skip}) % {step_tmax} != 0')
                 sys.exit(0)
             else:
-                idx = self.site_name.index(init_site[i])
-            
-            self.site[idx]['d'].append(distance[i])
-            self.site[idx]['Ea'].append(Ea[i])
-            self.site[idx]['z'].append(z[i])
-    
-    
-    def print_path(self):
-        print("site\td(Å)\tEa(eV)\tE(eV)\tz")
-        for dic_site in self.site:
-            num_path = len(dic_site['d'])
-
-            for i in range(num_path):
-                print(f"{dic_site['name']}", end='\t')
-                print("%.3f"%dic_site['d'][i], end='\t')
-                print("%.2f"%dic_site['Ea'][i], end='\t')
-                print("%.2f"%dic_site['E'], end='\t')
-                print("%d"%dic_site['z'][i], end='\n')
-
-
-    def get_D_neb(self, 
-                  T, 
-                  f=1e13):
-        T = np.array(T, dtype=float)
-        E = np.array(self.site_E, dtype=float).reshape(-1, 1)
-        
-        prob = np.exp(-E/(self.kb*T))
-        partition = np.sum(prob, axis=0)
-        prob /= partition
-
-        D_site = np.zeros((len(self.site), len(T)))
-        for i, dic_site in enumerate(self.site):
-            num_path = len(dic_site['d'])
-            D_i = 0
-            for j in range(num_path):
-                a = dic_site['d'][j] * 1e-10
-                z = dic_site['z'][j]
-                D_i += (1/6)*z*a**2*f * np.exp(-dic_site['Ea'][j]/(self.kb*T))
-            D_site[i] = D_i
-
-        return np.sum(prob * D_site, axis=0)
-    
-    
-    def plot_neb(self, 
-                 T, 
-                 f=1e13, 
-                 label=None):
-        T = np.array(T)
-        D_NEB = self.get_D_neb(T, f)
-        plt.plot(1/T, np.log(D_NEB), 'k:', label=label)
-
-
-    def plot_Einstein(self):
-        # plot D from ER
-        T_ER = np.array([dic['T'] for dic in self.D_ER])
-        D_ER = np.array([dic['D'] for dic in self.D_ER])
-        plt.scatter(1/T_ER, np.log(D_ER), 
-                    facecolor='None', edgecolor='r', s=50, linewidth=1.5, 
-                    label='Einstein')
-        
-        # x ticks for ER
-        if len(T_ER) >= 3:
-            ticks_idx = np.array([0, len(T_ER)/2, len(T_ER)-1], dtype=int)
-            T_ticks = T_ER[ticks_idx]
-            ticks = [f"1/{temp}" for temp in T_ticks]
-            plt.xticks(1/T_ticks, ticks)
-        else:
-            ticks = [f"1/{temp}" for temp in T_ER]
-            plt.xticks(1/T_ER, ticks)
-        
-        
-    def plot_Arrhenius(self,
-                       T,
-                       f=[],
-                       save=True,
-                       outfig='Arrhenius.png',
-                       dpi=300,
-                       fmin=1e12,
-                       fmax=1e14,
-                       step=10000):
-        # plot NEB
-        label_NEB = None
-        if len(f) == 0:
-            f = [self.get_frequency(fmin, fmax, step)]
-            label_NEB = "NEB " + "(" + "%.2e"%f[0] + " Hz)"
-
-        if label_NEB is None:
-            label_NEB = "NEB"
-
-        for freq in f:
-            self.plot_neb(T, freq, label=label_NEB)
-            label_NEB = None
-        
-        # plot ER
-        self.plot_Einstein()
-
-        plt.xlabel('1/T (1/K)', fontsize=12)
-        plt.ylabel('ln D', fontsize=12)
-        plt.legend(fontsize=10.5)
-
-        if save:
-            plt.savefig(outfig, dpi=dpi)
-        plt.show()
-
-
-    def get_frequency(self,
-                      fmin=1e12,
-                      fmax=1e14,
-                      step=10000):
-        
-        freq = np.linspace(fmin, fmax, step)
-        T_ER = np.array([dic['T'] for dic in self.D_ER])
-        D_ER = np.array([dic['D'] for dic in self.D_ER])
-
-        err_min = np.inf
-        f_opt = None
-        for f in freq:
-            D_NEB = self.get_D_neb(T_ER, f)
-            err = np.sum((D_NEB - D_ER)**2)
-            if err < err_min:
-                err_min = err
-                f_opt = f
+                segment = int((self.data.nsw[i] - step_skip) / step_tmax)
                 
-        return f_opt
+            msd = EnsembleEinstein(symbol=self.symbol,
+                                   prefix=path_dir,
+                                   labels=self.data.label[i],
+                                   segments=segment,
+                                   skip=step_skip,
+                                   start=step_start,
+                                   end=step_end)
+            self.msd.append(msd)
+    
+    def saveMSD(self):
+        for msd in self.msd:
+            msd.save_msd()
+            self.D.append(msd.diffcoeff)
+        self.D = np.array(self.D)
+        print('msd directory is created.')
+        print('msd raw data is written in msd directory.')
+
+    def plot_results(self):
+        kb = 8.61733326e-5
+        cmap = plt.get_cmap("Set1")
+        
+        # msd plot
+        plt.rcParams['figure.figsize'] = (3.8, 3.8)
+        plt.rcParams['font.size'] = 11
+        fig, ax = plt.subplots()
+        for axis in ['top','bottom','left','right']:
+            ax.spines[axis].set_linewidth(1.2)
+            
+        for i, msd in enumerate(self.msd):
+            x, y = msd.timestep, msd.msd
+            x_fit = np.linspace(self.start, self.tmax, 1000)
+            slop, intercept = np.polyfit(x, y, deg=1)
+            ax.plot(x, y, 
+                    c=cmap(i), linestyle='-', linewidth=2.5, alpha=0.35)
+            ax.plot(x_fit, slop*x_fit+intercept, 
+                    c=cmap(i), linestyle='-', linewidth=2.5, label=str(self.data.temp[i]))
+        
+        ax.axvline(self.start, 0, 1, c='k', linewidth=1, linestyle=':')
+        plt.xlim([-1, self.tmax])
+        plt.xlabel('t (ps)', fontsize=14)
+        plt.ylabel(r'MSD ($Å^2$)', fontsize=14)
+        plt.legend(loc='upper left', fontsize=12,
+                   title='T (K)', title_fontsize=13, 
+                   fancybox=True, framealpha=1, edgecolor='inherit')
+        plt.savefig('msd.png', transparent=True, dpi=300, bbox_inches="tight")
+        # plt.show()
+        print('msd.png is created.')
+            
+        # Arrhenius plot
+        plt.rcParams['figure.figsize'] = (3.8, 3.8)
+        plt.rcParams['font.size'] = 11
+        fig, ax = plt.subplots()
+        for axis in ['top','bottom','left','right']:
+            ax.spines[axis].set_linewidth(1.2)
+            
+        slop, intercept = np.polyfit(1/self.data.temp, np.log(self.D), deg=1)
+        x_fit = np.linspace(1/self.data.temp[-1], 1/self.data.temp[0], 100)
+        plt.plot(x_fit, slop*x_fit+intercept, 'k:')
+        
+        for i, D in enumerate(self.D):
+            plt.scatter(1/self.data.temp[i], np.log(D), 
+                        color=cmap(i), marker='s', s=50, label=str(self.data.temp[i]))
+        plt.xlabel('1/T (1/K)', fontsize=14)
+        plt.ylabel(r'ln $D$', fontsize=14)
+        num_data = len(self.D)
+        ncol = int(np.ceil(num_data / 5))
+        plt.legend(loc='best', fancybox=True, framealpha=1, edgecolor='inherit',
+                   ncol=ncol, labelspacing = 0.3, columnspacing=0.5, borderpad=0.2, handlelength=0.6,
+                   fontsize=11, title='T (K)', title_fontsize=11)
+        
+        if num_data >= 3:
+            x = np.array([self.data.temp[0], self.data.temp[int(num_data/2)] ,self.data.temp[-1]])
+        else:
+            x = self.data.temp
+            
+        x_str = [f'1/{T}' for T in x]
+        x = 1/x
+        plt.xticks(x, x_str)
+        plt.savefig('Arrhenius.png', transparent=True, dpi=300, bbox_inches="tight")
+        # plt.show()
+        print('Arrhenius.png is created.')
+        
+        # write results
+        with open('Einstein.txt', 'w') as f:
+            f.write(f'symbol of moving atom = {self.symbol}\n')
+            f.write('\nParameters for diffusion coefficient : \n')
+            f.write(f'  D0   = {np.exp(intercept):.5e} m2/s\n')
+            f.write(f'  Ea_D = {-kb * slop:.5f} eV\n')
+            f.write('\n')
+            f.write('Raw data\n')
+            f.write('T(K) \tD(m2/s)\n')
+            for temp, D in zip(self.data.temp, self.D):
+                f.write(f'{temp} \t{D :.5e}\n')
+                   
+        print('Einstein.txt is created.')
+        print('parameters for diffusion coefficient : ')
+        print(f'  D0   = {np.exp(intercept) :.5e} m2/s')
+        print(f'  Ea_D = {-kb * slop :.5f} eV')
+        print('')

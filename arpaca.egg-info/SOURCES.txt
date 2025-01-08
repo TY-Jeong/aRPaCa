@@ -1,0 +1,6 @@
+README.md
+setup.py
+arpaca.egg-info/PKG-INFO
+arpaca.egg-info/SOURCES.txt
+arpaca.egg-info/dependency_links.txt
+arpaca.egg-info/top_level.txt

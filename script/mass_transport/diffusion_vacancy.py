@@ -16,8 +16,8 @@ RED = '\033[91m'
 RESET = '\033[0m'
 
 # adjust output type for window environment
-if platform.system()=="Windows":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+# if platform.system()=="Windows":
+#     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 parser = argparse.ArgumentParser(
     description='aRPaCa: ab initio RRAM Parameter Calculator',

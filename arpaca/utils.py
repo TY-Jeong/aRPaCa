@@ -21,9 +21,12 @@ from pymatgen.io.vasp.outputs import Vasprun
 from pymatgen.io.pwscf import PWInput
 from pymatgen.electronic_structure.core import Spin
 from pymatgen.io.ase import AseAtomsAdaptor
-from mp_api.client import MPRester
 from scipy.interpolate import interp1d
-
+try:
+    from mp_api.client import MPRester
+except:
+    print("mp_api module is not found: interface generation is not avail")
+    
 warnings.filterwarnings("ignore", module='pymatgen')
 
 

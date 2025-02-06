@@ -62,10 +62,10 @@ Here, the term following `-c` represents the chemical formula of an amorphous wh
 
 
 ### **Mass transport parameter**
-#### *Note: this codes are in preparation, hence this portion will be opend after publication*
 ---
 ### Preparations
 ---
+***Note**: this codes are in preparation, hence this portion will be opend after publication*
 For the mass transprot parameter calculation, the user need to conduct AIMD simulation (NVT ensemble) in several temperatures in advance. Then, the results should be arranged as follows:
 
 ``` ruby

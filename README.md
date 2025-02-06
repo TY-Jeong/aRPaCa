@@ -7,11 +7,23 @@
 * Tools for **structure generation**.
     * Amorphous generation
     * Interface generation
-*  **Diffusion coefficient** calculation using *ab initio* molecular dynamics (AIMD)
-    * Effecitve diffusion parameters (crystalline only)
-    * Diffusion coefficient using Einstein relation (crystalline and amorphous)
+*  **Diffusion coefficient** calculation based on *ab initio* molecular dynamics (AIMD)
+    * Effecitve diffusion parameters
+    * Diffusion coefficient using Einstein relation
 * **Schottky profile** of metal/oxide interface
 * **Electric conductivity** of oxide with arbitrary composition
+
+## Contents
+
+* Getting started
+* User instruction
+  * Structure generation
+    * Amorphous generation
+    * Interface generation
+  * Parameter calculation
+    * Mass transport paramters
+    * Electrical conductivity
+    * Schottky profile
 
 ## Getting started
 
@@ -21,4 +33,24 @@ POT_PBE=/home/taeyoung/POT/POT_PBE
 POT_LDA=/home/taeyoung/POT/POT_LDA
 packmol=/home/taeyoung/Downloads/packmol-20.14.3/packmol
 ```
+
+
+## User instruction
+
+To facilitate implementation of **aRPaCa**, scipts files are provided in `aRPaCa/script` directory. The user can also implement **aRPaCa** in Python interpreter with `import arpaca`.
+
+
+Here, the usages of the scipt files are summarized:
+
+
+|Scipt|Explanation|Note|
+|-----|-----------|----|
+|**genAmorphous.py**|Generate amorphous structure| |
+|**einstein.py**|Calculate diffusion coefficient based on Einstein relation| |
+|**trajectory.py**|Determine trajectory of vacancy <br> Calculate effective diffusion parameters (except for frequency)|Crystalline only|
+|**frequency.py**|Calculate jump attempt frequency |**trajectory.py** should be executed first|
+
+
+### Amorpohus generation
+
 

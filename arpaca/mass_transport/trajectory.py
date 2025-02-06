@@ -1,9 +1,9 @@
 import os
-import io
 import sys
-import copy
-import platform
+import time
+import copy   
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from PIL import Image
@@ -12,25 +12,22 @@ from colorama import Fore
 from tabulate import tabulate
 from scipy.optimize import minimize_scalar
 
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.patches import FancyArrowPatch
-from mpl_toolkits.mplot3d import proj3d
-
 from pymatgen.core import Structure
 from pymatgen.analysis.local_env import VoronoiNN
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
+# For Arrow3D
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.patches import FancyArrowPatch
+from mpl_toolkits.mplot3d import proj3d
+
+# color map for tqdm
 BOLD = '\033[1m'
 CYAN = '\033[36m'
 MAGENTA = '\033[35m'
 GREEN = '\033[92m' # Green color
 RED = '\033[91m'   # Red color
 RESET = '\033[0m'  # Reset to default color
-
-
-# adjust output type for window environment
-if platform.system() == "Windows":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 
 class Arrow3D(FancyArrowPatch):
@@ -182,7 +179,6 @@ class LatticeHopping:
         lattice: trajectory.Lattice class
         interval: (int) step interval to be used in averaging.
         """
-
         if os.path.isfile(xdatcar):
             self.xdatcar = xdatcar
         else:
@@ -191,12 +187,11 @@ class LatticeHopping:
 
         self.interval = interval
         self.verbose = verbose
-
         # color map for arrows
         self.cmap = ['b', 'c', 'black', 'deeppink', 'darkorange', 
                      'saddlebrown', 'red', 'lawngreen', 'grey', 'darkkhaki', 
                      'slateblue', 'purple', 'g']
-
+        
         # lattice information
         self.target = lattice.symbol
         self.lat_points = np.array([d['coord'] for d in lattice.lat_points], dtype=float)
@@ -331,7 +326,9 @@ class LatticeHopping:
         self.forces = self.forces.reshape(self.num_step, self.interval, num_tar, 3)
         self.forces = np.average(self.forces, axis=1)
 
-    def distance_PBC(self, coord1, coord2):
+    def distance_PBC(self, 
+                     coord1, 
+                     coord2):
         """
         coord1 and coord2 are direct coordinations.
         coord1 is one point or multiple points.
@@ -347,7 +344,9 @@ class LatticeHopping:
         else:
             return np.sqrt(np.sum(np.dot(distance, self.lattice)**2,axis=1))
 
-    def displacement_PBC(self, r1, r2):
+    def displacement_PBC(self, 
+                         r1, 
+                         r2):
         disp = r2 - r1
         disp[disp > 0.5] -= 1.0
         disp[disp < -0.5] += 1.0
@@ -473,7 +472,8 @@ class LatticeHopping:
             self.idx_vac[i] = idx_i
             self.traj_vac_C[i] = self.lat_points_C[idx_i]
 
-    def correct_transition_state(self, step_ignore=[]):
+    def correct_transition_state(self,
+                                 step_ignore=[]):
         traj = np.transpose(self.position[self.idx_target]['traj'], (1, 0, 2))
         for i in range(1, self.num_step):
             if i in step_ignore:
@@ -850,7 +850,9 @@ class LatticeHopping:
             if self.verbose:
                 print('vacancy is unique.')
 
-    def update_vacancy(self, step, lat_point):
+    def update_vacancy(self,
+                       step,
+                       lat_point):
         """
         step: step which the user want to update the vacancy site
         lat_point: label of lattice point where vacancy exist at the step
@@ -858,7 +860,8 @@ class LatticeHopping:
         self.idx_vac[step] = [lat_point]
         self.traj_vac_C[step] = np.array([self.lat_points_C[lat_point]])
 
-    def correct_multivacancy(self, start=1):
+    def correct_multivacancy(self, 
+                             start=1):
         """
         correction for multi-vacancy issue
         correction starts from 'start' step
@@ -938,7 +941,7 @@ class LatticeHopping:
                     print("there are multiple candidates.")       
                     print(f"find the vacancy site for your self. (step: {step})")
                 break
-            
+
         # update trace arrows
         self.get_trace_arrows()
 
@@ -990,6 +993,10 @@ class Analyzer:
         # random walk MSD
         self.a = np.array([path['distance'] for path in self.path], dtype=float)
         self.msd_rand = np.sum(self.a**2 * self.counts)
+        
+        # total steps vacancy remained at eash site
+        self.total_reside_steps = None
+        self.get_total_reside_step()
         
         # print results
         if self.verbose:
@@ -1172,6 +1179,16 @@ class Analyzer:
                     print(p['step'], end=' ')
                 print('\n')
                 
+    def get_total_reside_step(self):
+        self.total_reside_steps = np.zeros(len(self.lattice.site_names))
+        step_before = 0
+        for path in self.path_vac:
+            index_init = self.lattice.site_names.index(path['site_init'])
+            self.total_reside_steps[index_init] += path['step'] - step_before
+            step_before = path['step']
+        index_final = self.lattice.site_names.index(self.path_vac[-1]['site_final'])
+        self.total_reside_steps[index_final] += self.traj.num_step - self.path_vac[-1]['step']   
+                
     def summary(self):
         # print counts
         print('# Hopping sequence analysis')
@@ -1196,10 +1213,20 @@ class Analyzer:
         print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
         print('')
         
-        # random walk msd
-        print(f"MSD for random walk process = {self.msd_rand:.5f} Å2")
+        # total steps vacancy remained at eash site
+        header = ['site', 'total steps']
+        data = [
+            [name, step] for name, step in zip(self.lattice.site_names, self.total_reside_steps)
+        ]
+        data.append(['Total', self.traj.num_step])
+        print('Total steps the vacancy remained at each site :')
+        print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
         print('')
         
+        # random walk msd
+        print(f"MSD for random walk process = {self.msd_rand:.5f} Å2")
+
+
 class Encounter:
     def __init__(self,
                  analyzer,
@@ -1375,7 +1402,7 @@ class Encounter:
         self.path_counts /= self.num_enc
             
     def print_summary(self):
-        print('# Encounter analysis')
+        print('\n# Encounter analysis')
         print(f"Number of encounters      : {self.num_enc}")
         print(f"Mean squared displacement : {self.msd:.5f} Å2")
         count_tot = int(np.sum(self.path_counts*self.num_enc))
@@ -1395,6 +1422,7 @@ class Encounter:
         print(f"Correlation factor = {self.f_cor:.5f}")
         print("")
         
+
 class Parameter:
     def __init__(self,
                  data,
@@ -1425,6 +1453,14 @@ class Parameter:
                                self.tolerance)
         self.num_path_except_unknowns = len(self.lattice.path_names)
         
+        # number of paths at each site
+        self.num_path_site = np.zeros(len(self.lattice.site_names))
+        for path in self.lattice.path:
+            self.num_path_site[self.lattice.site_names.index(path['site_init'])] += 1
+            
+        # total steps vacancy remained at eash site
+        self.total_reside_steps = []
+        
         # path counts
         self.counts = []
         self.encounter_num = []
@@ -1446,9 +1482,10 @@ class Parameter:
         self.D0_rand = None
         self.Ea = None
         self.tau = None
+        self.tau0 = None
         self.a_eff = None
-        self.z_eff = None
         self.nu_eff =None
+        self.z_mean = None
         self.get_effective_parameters()
         
         if self.verbose:
@@ -1474,6 +1511,7 @@ class Parameter:
             encounter_num_i = []
             encounter_msd_i = []
             encounter_counts_i = []
+            total_reside_steps_i = np.zeros(len(self.lattice.site_names))
             
             fail_i = []
             desc = str(int(temp))+'K'
@@ -1512,8 +1550,9 @@ class Parameter:
                         counts_i[name] = count
                     else:
                         counts_i[name] += count
+                total_reside_steps_i += anal.total_reside_steps
                         
-                # correlation factor        
+                # encounter 
                 enc = Encounter(anal, verbose=self.verbose)
                 encounter_num_i.append(enc.num_enc)
                 encounter_msd_i.append(enc.msd)
@@ -1527,11 +1566,13 @@ class Parameter:
                 self.lattice.path_names = anal.path_names
             
             self.counts.append(counts_i)
+            self.total_reside_steps.append(total_reside_steps_i)
             self.encounter_num.append(encounter_num_i)
             self.encounter_msd.append(encounter_msd_i)
             self.encounter_counts.append(encounter_counts_i)
             self.labels_failed.append(fail_i)
-    
+        self.total_reside_steps = np.array(self.total_reside_steps)
+        
         # convert dictionary to numpy
         all_keys = sorted(set().union(*self.counts))
         counts = np.zeros((len(self.counts), len(all_keys)))
@@ -1576,40 +1617,90 @@ class Parameter:
     def get_effective_parameters(self):
         # effective z
         z = np.array([path['z'] for path in self.lattice.path], dtype=float)[:self.num_path_except_unknowns]
-        self.z_eff = np.sum(self.counts[:,:self.num_path_except_unknowns], axis=1)
-        self.z_eff /= np.sum(self.counts[:,:self.num_path_except_unknowns] / z, axis=1)
-        self.z_eff = np.average(self.z_eff)
+        self.z_mean = np.sum(self.counts[:,:self.num_path_except_unknowns], axis=1)
+        self.z_mean /= np.sum(self.counts[:,:self.num_path_except_unknowns] / z, axis=1)
+        self.z_mean = np.average(self.z_mean)
         
         # D_rand
         a = np.array([path['distance'] for path in self.lattice.path], dtype=float)
+        a = a[:self.num_path_except_unknowns] # lattice hopping only
         num_label = np.array([len(label) for label in self.data.label], dtype=float)
         t = self.data.nsw * self.data.potim * num_label
-        self.D_rand = np.sum(a**2 * self.counts, axis=1) / (6*t) * 1e-5
+        counts = self.counts[:,:self.num_path_except_unknowns] # lattice hopping only
+        self.D_rand = np.sum(a**2 * counts, axis=1) / (6*t) * 1e-5
         
         # Ea and D0_rand
         slop, intercept = np.polyfit(1/self.temp, np.log(self.D_rand), deg=1)
         self.Ea = -slop * self.kb
         self.D0_rand = np.exp(intercept)
         
-        # effective nu
-        self.tau = t * (1e-3) / np.sum(self.counts, axis=1) # ps
-        error_tau = lambda nu: np.linalg.norm(
-            self.tau - (1 / (self.z_eff * nu + 1e-9)) * np.exp(self.Ea / (self.kb * self.temp))
+        # effective tau0
+        self.tau = t * (1e-3) / np.sum(counts, axis=1) # ps
+        error_tau = lambda tau0: np.linalg.norm(
+            self.tau - tau0 * np.exp(self.Ea / (self.kb * self.temp))
             )
         result = minimize_scalar(error_tau)
-        self.nu_eff = result.x # THz
+        self.tau0 = result.x # ps
         
         # effective a
-        self.a_eff = np.sqrt(6*self.D0_rand / (self.z_eff * self.nu_eff)) * 1e4
+        self.a_eff = np.sqrt(6*self.D0_rand*self.tau0) * 1e4
 
     def summary(self):
         print("# -----------------( Summary )-----------------")
+        # lattice information
+        num_paths = np.zeros(len(self.lattice.site_names))
+        for path in self.lattice.path[:self.num_path_except_unknowns]:
+            num_paths[self.lattice.site_names.index(path['site_init'])] += 1
+        print('Lattice information :')
+        print(f"  Number of sites : {len(self.lattice.site_names)}")
+        print(f"  Number of paths : ", end='')
+        for num in num_paths:
+            print(int(num), end=' ')
+        print('')
+        print(f"  Number of unknown paths : {len(self.lattice.path) - self.num_path_except_unknowns}")
+        print('')
+        header = ['path', 'init', 'final', 'a(Å)', 'z']
+        data = [
+            [path['name'], path['site_init'], path['site_final'], path['distance'], path['z']] 
+            for path in self.lattice.path
+        ]
+        print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+        print('')
+
+        # simulation temperatures
+        print('Simulation temperatures (K) :\n', end='  ')
+        for temp in self.temp:
+            print(temp, end=' ')
+        print('')
+
+        # residence time
+        print('\nTime vacancy remained at each site (ps) :')
+        header = ['T (K)'] + self.lattice.site_names
+        data = [
+            [temp] + step.tolist() 
+            for temp, step in zip(self.temp, self.total_reside_steps * self.interval)
+        ]
+        data.append(['Total'] + np.sum(self.total_reside_steps * self.interval, axis=0).tolist())
+        print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+        print('')
+
+        # counts
+        print('Counts of occurrences for each hopping path :')
+        header = ['T (K)'] + self.lattice.path_names
+        data = [
+            [temp] + count.tolist()
+            for temp, count in zip(self.temp, self.counts)
+        ]
+        data.append(['Total'] + np.sum(self.counts, axis=0).tolist())
+        print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+        print('')
+                
         # effective parameters
         print('\nEffective diffusion parameters : ')
         header = ['parameter', 'value']
-        parameters = ['D0_rand (m2/s)', 'Ea (eV)', 'f0', 'Ea_f (eV)', 'z', 'a (Å)', 'nu (THz)']
-        values = [f"{self.D0_rand:.5e}", f"{self.Ea:.5f}", f"{self.f0:.5f}", f"{self.Ea_f:.5f}",
-                  f"{self.z_eff:.5f}", f"{self.a_eff:.5f}", f"{self.nu_eff:.5f}"]
+        parameters = ['D0 (m2/s)', 'Ea (eV)', 'tau0 (ps)', 'a (Å)', 'f_mean', 'z_mean',]
+        values = [f"{self.D0_rand:.5e}", f"{self.Ea:.5f}", f"{self.tau0:.5f}", 
+                  f"{self.a_eff:.5f}", f"{np.average(self.f_cum):.5f}", f"{self.z_mean:.5f}"]
         data = [
             [params, value] for params, value in zip(parameters, values)
         ]
@@ -1632,7 +1723,11 @@ class Parameter:
         data = [
             [f"{temp}", f"{f:.5f}"] for temp, f in zip(self.temp, self.f_cum)
         ]
+        data.append(['Average', f"{np.average(self.f_cum):.5f}"])
         print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+        print('')
+        print(f"pre-exponential of f (f0) = {self.f0:.5f}")
+        print(f"activation energy for f (Ea_f) = {self.Ea_f:.5f} eV")
         
         # random walk diffuison coefficient
         print('\nRandom walk diffusion coefficient : ')
@@ -1692,7 +1787,6 @@ class Parameter:
         plt.xticks(x, x_str)
         plt.savefig('D_rand.png', transparent=False, dpi=300, bbox_inches="tight")
         plt.close()
-        print('D_rand.png is created.')
         
         # tau
         plt.style.use('default')
@@ -1706,12 +1800,11 @@ class Parameter:
             ax.bar(temp, self.tau[i], width=50, edgecolor='k', color=self.cmap(i))
             ax.scatter(temp, self.tau[i], marker='o', edgecolors='k', color='k')
         x = np.linspace(0.99*self.temp[0], 1.01*self.temp[-1], 1000)
-        ax.plot(x, (1/(self.z_eff*self.nu_eff)) * np.exp(self.Ea/(self.kb*x)), 'k:')
+        ax.plot(x, self.tau0 * np.exp(self.Ea/(self.kb*x)), 'k:')
         plt.xlabel('T (K)', fontsize=14)
         plt.ylabel(r'$\tau$ (ps)', fontsize=14)
         plt.savefig('tau.png', transparent=False, dpi=300, bbox_inches="tight")
         plt.close()
-        print('tau.png is created')
         
         # correlation factor
         plt.style.use('default')
@@ -1738,7 +1831,6 @@ class Parameter:
         axins.set_xticks([])
         axins.set_yticks([])
         plt.savefig('f_cor.png', transparent=False, dpi=300, bbox_inches="tight")
-        print('f_cor.png is created.')
         plt.close()
         print('')
        
@@ -1851,35 +1943,412 @@ class CorrelationFactor(Parameter):
         print('')
         print("# -----------------( Finish  )-----------------")
 
-# Ncell test
-#num_cell = int(sys.argv[1])
-#data = DataInfo(prefix1='../../traj', prefix2='traj', verbose=True)
-#cor = CorrelationFactor(data=data,
-#                        interval=0.05,
-#                        poscar_lattice='../../POSCAR_LATTICE',
-#                        symbol='O',
-#                        temp=2000,
-#                        label=[format(i+1, '02') for i in range(num_cell)],
-#                        verbose=True)
 
-# interval test
-#interval = float(sys.argv[1])
-#data = DataInfo(prefix1='../../traj', prefix2='traj', verbose=True)
-#cor = CorrelationFactor(data=data,
-#                        interval=interval,
-#                        poscar_lattice='../../POSCAR_LATTICE',
-#                        symbol='O',
-#                        temp=2000,
-#                        label='all',
-#                        verbose=True)
+class PostProcess:
+    def __init__(self, 
+                 file_params='parameter.txt',
+                 file_neb = 'neb.csv',
+                 verbose=False):
+        # check file
+        if os.path.isfile(file_params):
+            self.file_params = file_params
+        else:
+            print(f"{file_params} is not found.")
+            sys.exit(0)
+        if os.path.isfile(file_neb):
+            self.file_neb = file_neb
+        else:
+            print(f"{file_neb} is not found.")
+            sys.exit(0)
+        self.verbose = verbose
+        self.kb = 8.61733326e-5
+        
+        # read parameter file
+        self.num_sites = None
+        self.num_paths = None
+        self.path_names = []
+        self.z = []
+        self.temp = None
+        self.times = []
+        self.counts = []
+        self.D0_eff = None
+        self.Ea_eff = None
+        self.tau0_eff = None
+        self.a_eff = None
+        self.read_parameter()
+        
+        # read neb file
+        self.Ea = None
+        self.read_neb()
+        
+        # P_site
+        self.P_site = self.times / np.sum(self.times, axis=1).reshape(-1,1)
+        
+        # P_esc
+        self.P_esc = np.exp(-self.Ea/(self.kb * self.temp[:, np.newaxis]))
+        self.P_esc_eff = np.exp(-self.Ea_eff / (self.kb * self.temp))
+        
+        # P = P_site * P_esc
+        self.P = None
+        self.get_P()
+        
+        # z_mean
+        self.z_mean = None
+        self.z_mean_rep = None # from total counts from all temperatures
+        self.get_z_mean()
+        
+        # z_eff
+        self.z_eff = np.sum(self.P * self.z, axis=1) / self.P_esc_eff
+        self.z_eff_rep = np.average(self.z_eff)
+        
+        # <m>
+        self.m_mean = self.z_eff / self.z_mean
+        self.m_mean_rep = np.average(self.m_mean)
+        
+        # nu
+        self.nu = None
+        self.nu_eff = None
+        self.nu_eff_rep = None # simple average of nu_eff
+        self.get_nu()
+        
+        if self.verbose:
+            self.summary()
+        
+    def read_parameter(self):
+        with open(self.file_params, 'r') as f:
+            lines = [line.strip() for line in f]
+            
+        for i, line in enumerate(lines):
+            if "Lattice information :" in line:
+                self.num_sites = int(lines[i+1].split()[-1])
+                self.num_paths = list(map(int, lines[i+2].split()[-self.num_sites:]))
+                self.num_paths = np.array(self.num_paths)
+                for j in range(np.sum(self.num_paths)):
+                    contents = lines[i+j+7].split()
+                    self.path_names.append(contents[0])
+                    self.z.append(int(contents[-1]))
+                self.z = np.array(self.z, dtype=float)
+                    
+            if "Simulation temperatures (K) :" in line:
+                self.temp = np.array(list(map(int, lines[i+1].split())), dtype=float)
+                
+            if "Time vacancy remained at each site (ps) :" in line:
+                for j in range(len(self.temp)):
+                    self.times.append(
+                        list(map(float, lines[i+j+3].split()[1:1+self.num_sites]))
+                        )
+                self.times = np.array(self.times)
+                
+            if "Counts of occurrences for each hopping path :" in line:
+                for j in range(len(self.temp)):
+                    self.counts.append(
+                        list(map(int, lines[i+j+3].split()[1:1+np.sum(self.num_paths)]))
+                        )
+                self.counts = np.array(self.counts, dtype=float)
+                
+            if "Effective diffusion parameters :" in line:
+                self.D0_eff = float(lines[i+3].split()[-1])
+                self.Ea_eff = float(lines[i+4].split()[-1])
+                self.tau0_eff = float(lines[i+5].split()[-1])
+                self.a_eff = float(lines[i+6].split()[-1])
+    
+    def read_neb(self):
+        neb = pd.read_csv(self.file_neb, header=None).to_numpy()
+        self.Ea = np.zeros(len(self.path_names), dtype=float)
+        for name_i, Ea_i in neb:
+            index = self.path_names.index(name_i)
+            self.Ea[index] = float(Ea_i)
+    
+    def get_P(self):
+        P_site_extend = []
+        for p_site in self.P_site:
+            P_site_i = []
+            for p, m in zip(p_site, self.num_paths):
+                P_site_i += [float(p)] * m
+            P_site_extend.append(P_site_i)
+        self.P = np.array(P_site_extend) * self.P_esc
+    
+    def get_z_mean(self):
+        self.z_mean = np.sum(self.counts, axis=1) / np.sum(self.counts / self.z, axis=1)
+        self.z_mean_rep = np.sum(self.counts) / np.sum(np.sum(self.counts, axis=0) / self.z)
+        
+    def get_nu(self):
+        times_extend = []
+        for time in self.times:
+            times_i = []
+            for t, m in zip(time, self.num_paths):
+                times_i += [float(t)] * m
+            times_extend.append(times_i)
+        self.nu = self.counts / (self.z * self.P_esc * times_extend) 
+        self.nu_eff = np.sum(self.counts, axis=1) / (np.sum(self.times, axis=1) * np.sum(self.P * self.z, axis=1))
+        self.nu_eff_rep = np.average(self.nu_eff)
+        
+    def summary(self):
+        # effective parameters
+        print("Effective diffusion parameters :")
+        header = ['parameter', 'value', 'description']
+        parameter = ["D0 (m2/s)", "tau0 (ps)", "Ea (eV)", 
+                     "a (Å)", "Z", "nu (THz)", "z_mean", "m_mean"]
+        value = [f"{self.D0_eff:.5e}", f"{self.tau0_eff:.5e}", f"{self.Ea_eff:.5f}", 
+                 f"{self.a_eff:.5f}", f"{self.z_eff_rep:.5f}", f"{self.nu_eff_rep:.5f}", 
+                 f"{self.z_mean_rep:.5f}", f"{self.m_mean_rep:.5f}"]
+        desciption = ['pre-exponential for diffusion coefficient',
+                      'pre-exponential for residence time',
+                      'activation barrier for lattice hopping',
+                      'hopping distance',
+                      'coordination number',
+                      'jump attempt frequency',
+                      'mean number of equivalent paths',
+                      'mean number of path types (=Z / z)']
+        data = [[p, v, d] for p, v, d in zip(parameter, value, desciption)]
+        print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+        print('')
+        
+        # temperature dependence
+        print("Effective diffusion parameters with respect to temperature :")
+        header = ["T (K)", "z", "nu (THz)", "z_mean", "m_mean"]
+        data = [
+            [T, f"{z:.5f}", f"{nu:.5f}", f"{z_mean:.5f}", f"{m_mean:.5f}"] 
+            for T, z, nu, z_mean, m_mean in zip(self.temp, self.z_eff, self.nu_eff, self.z_mean, self.m_mean) 
+        ]
+        data.append(['Average', f"{np.average(self.z_eff):.5f}", f"{np.average(self.nu_eff):.5f}",
+                     f"{np.average(self.z_mean):.5f}", f"{np.average(self.m_mean):.5f}"])
+        print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+        print('')
+        
+        # nu with respect to temperature
+        print("Jump attempt frequency (THz) with respect to temperature :")
+        print("(Note: reliable results are obtained only for paths with sufficient sampling)")
+        header = ["T (K)"] + self.path_names
+        data = [
+            [T] + list(nu) for T, nu in zip(self.temp, self.nu)
+        ]
+        data.append(['Average'] + [f"{nu:.5f}" for nu in np.average(self.nu, axis=0)])
+        print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+        print('')
+        
+        # P_site with respect to temperature
+        print("P_site with respect to temperature :")
+        header = ["T (K)"] + [f"site{i+1}" for i in range(self.num_sites)]
+        data = [
+            [T] + [f"{p:.5e}" for p in p_i] for T, p_i in zip(self.temp, self.P_site)
+        ]
+        print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+        print('')
+        
+        # P_esc with respect to temperature
+        print("P_esc with respect to temperature :")
+        header = ["T (K)"] + self.path_names
+        data = [
+            [T] + [f"{p:.5e}" for p in p_i] for T, p_i in zip(self.temp, self.P_esc)
+        ]
+        print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+        print('')
+        
 
-# get effective params
-# symbol = 'O'
-# poscar_lattice = "POSCAR_LATTICE"
-# data = DataInfo(verbose=True)
-# params = Parameter(data,
-#                    interval=0.05,
-#                    poscar_lattice=poscar_lattice,
-#                    symbol=symbol,
-#                    verbose=True)
-# params.save_figures()
+# class PostProcess:
+#     def __init__(self, 
+#                  file_params='parameter.txt',
+#                  file_neb = 'neb.csv',
+#                  verbose=False):
+#         # check file
+#         if os.path.isfile(file_params):
+#             self.file_params = file_params
+#         else:
+#             print(f"{file_params} is not found.")
+#             sys.exit(0)
+#         if os.path.isfile(file_neb):
+#             self.file_neb = file_neb
+#         else:
+#             print(f"{file_neb} is not found.")
+#             sys.exit(0)
+#         self.verbose = verbose
+#         self.kb = 8.61733326e-5
+        
+#         # read parameter file
+#         self.num_sites = None
+#         self.num_paths = None
+#         self.path_names = []
+#         self.z = []
+#         self.temp = None
+#         self.times = []
+#         self.counts = []
+#         self.D0_eff = None
+#         self.Ea_eff = None
+#         self.tau0_eff = None
+#         self.a_eff = None
+#         self.read_parameter()
+        
+#         # read neb file
+#         self.Ea = None
+#         self.read_neb()
+        
+#         # P_site
+#         self.P_site = self.times / np.sum(self.times, axis=1).reshape(-1,1)
+        
+#         # P_esc
+#         self.P_esc = np.exp(-self.Ea/(self.kb * self.temp[:, np.newaxis]))
+#         self.P_esc_eff = np.exp(-self.Ea_eff / (self.kb * self.temp))
+        
+#         # P = P_site * P_esc
+#         self.P = None
+#         self.get_P()
+        
+#         # <z>
+#         self.z_mean = None
+#         self.z_mean_rep = None # from total counts from all temperatures
+#         self.get_z_mean()
+        
+#         # <m>
+#         self.m_mean = None
+#         self.m_mean_rep = None # simple average of m_mean
+#         self.get_m_mean()
+        
+#         # z_eff
+#         self.z_eff = self.z_mean * self.m_mean
+#         self.z_eff_rep = np.average(self.z_eff)
+        
+#         # nu
+#         self.nu = None
+#         self.nu_eff = None
+#         self.nu_eff_rep = None # simple average of nu_eff
+#         self.get_nu()
+        
+#         if self.verbose:
+#             self.summary()
+        
+#     def read_parameter(self):
+#         with open(self.file_params, 'r') as f:
+#             lines = [line.strip() for line in f]
+            
+#         for i, line in enumerate(lines):
+#             if "Lattice information :" in line:
+#                 self.num_sites = int(lines[i+1].split()[-1])
+#                 self.num_paths = list(map(int, lines[i+2].split()[-self.num_sites:]))
+#                 self.num_paths = np.array(self.num_paths)
+#                 for j in range(np.sum(self.num_paths)):
+#                     contents = lines[i+j+7].split()
+#                     self.path_names.append(contents[0])
+#                     self.z.append(int(contents[-1]))
+#                 self.z = np.array(self.z, dtype=float)
+                    
+#             if "Simulation temperatures (K) :" in line:
+#                 self.temp = np.array(list(map(int, lines[i+1].split())), dtype=float)
+                
+#             if "Time vacancy remained at each site (ps) :" in line:
+#                 for j in range(len(self.temp)):
+#                     self.times.append(
+#                         list(map(float, lines[i+j+3].split()[1:1+self.num_sites]))
+#                         )
+#                 self.times = np.array(self.times)
+                
+#             if "Counts of occurrences for each hopping path :" in line:
+#                 for j in range(len(self.temp)):
+#                     self.counts.append(
+#                         list(map(int, lines[i+j+3].split()[1:1+np.sum(self.num_paths)]))
+#                         )
+#                 self.counts = np.array(self.counts, dtype=float)
+                
+#             if "Effective diffusion parameters :" in line:
+#                 self.D0_eff = float(lines[i+3].split()[-1])
+#                 self.Ea_eff = float(lines[i+4].split()[-1])
+#                 self.tau0_eff = float(lines[i+5].split()[-1])
+#                 self.a_eff = float(lines[i+6].split()[-1])
+    
+#     def read_neb(self):
+#         neb = pd.read_csv(self.file_neb, header=None).to_numpy()
+#         self.Ea = np.zeros(len(self.path_names), dtype=float)
+#         for name_i, Ea_i in neb:
+#             index = self.path_names.index(name_i)
+#             self.Ea[index] = float(Ea_i)
+    
+#     def get_P(self):
+#         P_site_extend = []
+#         for p_site in self.P_site:
+#             P_site_i = []
+#             for p, m in zip(p_site, self.num_paths):
+#                 P_site_i += [float(p)] * m
+#             P_site_extend.append(P_site_i)
+#         self.P = np.array(P_site_extend) * self.P_esc
+    
+#     def get_z_mean(self):
+#         self.z_mean = np.sum(self.counts, axis=1) / np.sum(self.counts / self.z, axis=1)
+#         self.z_mean_rep = np.sum(self.counts) / np.sum(np.sum(self.counts, axis=0) / self.z)
+        
+#     def get_m_mean(self):
+#         self.m_mean = np.sum(self.P, axis=1) / self.P_esc_eff
+#         self.m_mean_rep = np.average(self.m_mean)
+        
+#     def get_nu(self):
+#         times_extend = []
+#         for time in self.times:
+#             times_i = []
+#             for t, m in zip(time, self.num_paths):
+#                 times_i += [float(t)] * m
+#             times_extend.append(times_i)
+#         self.nu = self.counts / (self.z * self.P_esc * times_extend)
+#         self.nu_eff = np.sum(self.nu * self.P, axis=1) / np.sum(self.P, axis=1)
+#         self.nu_eff_rep = np.average(self.nu_eff)
+        
+#     def summary(self):
+#         # effective parameters
+#         print("Effective diffusion parameters :")
+#         header = ['parameter', 'value', 'description']
+#         parameter = ["D0 (m2/s)", "tau0 (ps)", "Ea (eV)", 
+#                      "a (Å)", "z", "nu (THz)", 
+#                      "z_mean", "m_mean"]
+#         value = [f"{self.D0_eff:.5e}", f"{self.tau0_eff:.5e}", f"{self.Ea_eff:.5f}", 
+#                  f"{self.a_eff:.5f}", f"{self.z_eff_rep:.5f}", f"{self.nu_eff_rep:.5f}", 
+#                  f"{self.z_mean_rep:.5f}", f"{self.m_mean_rep:.5f}"]
+#         desciption = ['pre-exponential for diffusion coefficient',
+#                       'pre-exponential for residence time',
+#                       'activation barrier for lattice hopping',
+#                       'hopping distance',
+#                       'coordination number (= z_mean * m_mean)',
+#                       'jump attempt frequency',
+#                       'mean number of equivalent paths',
+#                       'mean number of path types']
+#         data = [[p, v, d] for p, v, d in zip(parameter, value, desciption)]
+#         print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+#         print('')
+        
+#         # temperature dependence
+#         print("Effective diffusion parameters with respect to temperature :")
+#         header = ["T (K)", "z", "nu (THz)", "z_mean", "m_mean"]
+#         data = [
+#             [T, f"{z:.5f}", f"{nu:.5f}", f"{z_mean:.5f}", f"{m_mean:.5f}"] 
+#             for T, z, nu, z_mean, m_mean in zip(self.temp, self.z_eff, self.nu_eff, self.z_mean, self.m_mean) 
+#         ]
+#         data.append(['Average', f"{np.average(self.z_eff):.5f}", f"{np.average(self.nu_eff):.5f}",
+#                      f"{np.average(self.z_mean):.5f}", f"{np.average(self.m_mean):.5f}"])
+#         print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+#         print('')
+        
+#         # nu with respect to temperature
+#         print("Jump attempt frequency (THz) with respect to temperature :")
+#         print("(Note: reliable results are obtained only for paths with sufficient sampling)")
+#         header = ["T (K)"] + self.path_names
+#         data = [
+#             [T] + list(nu) for T, nu in zip(self.temp, self.nu)
+#         ]
+#         data.append(['Average'] + [f"{nu:.5f}" for nu in np.average(self.nu, axis=0)])
+#         print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+#         print('')
+        
+#         # P_site with respect to temperature
+#         print("P_site with respect to temperature :")
+#         header = ["T (K)"] + [f"site{i+1}" for i in range(self.num_sites)]
+#         data = [
+#             [T] + [f"{p:.5e}" for p in p_i] for T, p_i in zip(self.temp, self.P_site)
+#         ]
+#         print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+#         print('')
+        
+#         # P_esc with respect to temperature
+#         print("P_esc with respect to temperature :")
+#         header = ["T (K)"] + self.path_names
+#         data = [
+#             [T] + [f"{p:.5e}" for p in p_i] for T, p_i in zip(self.temp, self.P_esc)
+#         ]
+#         print(tabulate(data, headers=header, tablefmt="simple", stralign='left', numalign='left'))
+#         print('')

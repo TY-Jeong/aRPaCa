@@ -1,5 +1,4 @@
 ## Arguments: [density], [chem_formula]
-import sys
 import argparse
 from arpaca.utils import genAmorphous
 

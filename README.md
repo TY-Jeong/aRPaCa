@@ -47,8 +47,8 @@ The list of sripts are summarized below:
 |-----|-----------|----|
 |**genAmorphous.py**|Generate amorphous structure| |
 |**einstein.py**|Calculate diffusion coefficient based on Einstein relation| |
-|**trajectory.py**|Determine trajectory of vacancy <br> Calculate effective diffusion parameters (except for frequency)|not opened (papare in preparatoin)|
-|**frequency.py**|Calculate jump attempt frequency |not opened (papare in preparatoin)|
+|**trajectory.py**|Determine trajectory of vacancy <br> Calculate effective diffusion parameters (except for frequency)|*not opened*<br>(*papar in preparation*)|
+|**frequency.py**|Calculate jump attempt frequency |*not opened*<br>(*papar in preparation*)|
 
 
 ### **Amorpohus generation**

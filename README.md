@@ -40,17 +40,65 @@ packmol=/home/taeyoung/Downloads/packmol-20.14.3/packmol
 To facilitate implementation of **aRPaCa**, scipts files are provided in `aRPaCa/script` directory. The user can also implement **aRPaCa** in Python interpreter with `import arpaca`.
 
 
-Here, the usages of the scipt files are summarized:
+The list of sripts are summarized below:
 
 
 |Scipt|Explanation|Note|
 |-----|-----------|----|
 |**genAmorphous.py**|Generate amorphous structure| |
 |**einstein.py**|Calculate diffusion coefficient based on Einstein relation| |
-|**trajectory.py**|Determine trajectory of vacancy <br> Calculate effective diffusion parameters (except for frequency)|Crystalline only|
-|**frequency.py**|Calculate jump attempt frequency |**trajectory.py** should be executed first|
+|**trajectory.py**|Determine trajectory of vacancy <br> Calculate effective diffusion parameters (except for frequency)|not opened (papare in preparatoin)|
+|**frequency.py**|Calculate jump attempt frequency |not opened (papare in preparatoin)|
 
 
-### Amorpohus generation
+### **Amorpohus generation**
+---
+Simple example:
+
+```ruby
+python genAmorphous.py -c Hf32O64 -d 10 # -c {chemical_formula} -d {density}
+```
+Here, the term following `-c` represents the chemical formula of an amorphous which the user want to obtain. It should be noted that the number of 1 cannot be ommited (*i.e.*, Hf32O64Ag1 rather than Hf34O64Ag). the second term following `-d` the density of the amorphous in unit of g/cm<SUP>3</SUP>. By executing the script, `POSCAR_{chemical_formula}` file will be generated. The user can also use the `-h` option for detailed description. 
 
 
+### **Mass transport parameter**
+#### *Note: this codes are in preparation, hence this portion will be opend after publication*
+---
+### Preparations
+---
+For the mass transprot parameter calculation, the user need to conduct AIMD simulation (NVT ensemble) in several temperatures in advance. Then, the results should be arranged as follows:
+
+``` ruby
+# example of ensemble directory
+traj\
+    traj.1500K\
+        OUTCAR
+        XDATCAR_01, FORCE_01
+           ⋮
+        XDATCAR_05, FORCE_05
+   traj.1600K\ # contents are omitted
+   traj.1700K\ # contents are omitted
+```
+Here, five AIMD simulations, labeled as 01, 02, ..., 05, were performed at each temperature. The required number of simulation is system-dependent, but should be large enough to ensure the reliability. FORCE files contains force vectors at each iteration and can be obtained using the `extractForce.py` script.
+
+### Einstein relation
+---
+Simple example:
+```ruby
+python einstein.py O 50 # {symbol of moving atom}, {x-range of msd plot}
+```
+Please use `-h` options, for other available options. If you used this script, please also cite [here](https://doi.org/10.1016/j.cpc.2022.108599).
+
+
+(*will be updated after publication*)
+
+### Effective diffusion parameter
+---
+simple example:
+```ruby
+python trajectory.py O 0.1 # {symbol of moving atom}, {time interval}
+python frequency.py # to obtain effective frequency and effective coordination number
+```
+Please use `-h` options, for other available options.
+
+(*will be updated after publication*)

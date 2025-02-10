@@ -49,6 +49,12 @@ The list of sripts are summarized below:
 |**einstein.py**|Calculate diffusion coefficient based on Einstein relation| |
 |**trajectory.py**|Determine trajectory of vacancy <br> Calculate effective diffusion parameters (except for frequency)|*not opened*<br>(*papar in preparation*)|
 |**frequency.py**|Calculate jump attempt frequency |*not opened*<br>(*papar in preparation*)|
+|**genBulk.py**|Generate bulk crystal structure|----|
+|**genSurface.py**|Generate surface structure based on the bulk crystal structure|----|
+|**genInterface.py**|Generate interface structure based on the surface structure|----|
+|**getVASPResult.py**|Parse VASP results of bulk and interface calculations|----|
+|**getQEResult.py**|Parse QE result of complex band structure calculation|----|
+|**sbhCalc.py**|Calculate the Schottky barrier profile (Schottky barrier height) using a self-consistent procedure|----|
 
 
 ### **Amorpohus generation**

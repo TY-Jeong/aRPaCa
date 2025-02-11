@@ -90,6 +90,8 @@ python genInterface.py -s POSCAR_substrate -f POSCAR_film
 ```
 Here, the term following `-s` represents the path to the surface structure file that the user wants to use as a substrate. The second term following `-f` represents the path to the surface structure file that the user wants to use as a film. By executing the script, `interface.vasp` file will be generated.
 
+The user can also use the -h option for detailed descriptions. If no terms are provided, a GUI will be launched to allow the user to input the necessary parameters.
+
 ### **Mass transport parameter**
 ---
 ### Preparations

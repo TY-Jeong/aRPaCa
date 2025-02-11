@@ -67,6 +67,22 @@ python genAmorphous.py -c Hf32O64 -d 10 # -c {chemical_formula} -d {density}
 Here, the term following `-c` represents the chemical formula of an amorphous which the user want to obtain. It should be noted that the number of 1 cannot be ommited (*i.e.*, Hf32O64Ag1 rather than Hf34O64Ag). the second term following `-d` the density of the amorphous in unit of g/cm<SUP>3</SUP>. By executing the script, `POSCAR_{chemical_formula}` file will be generated. The user can also use the `-h` option for detailed description. 
 
 
+### **Interface generation**
+---
+Simple example:
+
+```ruby
+python genBulk.py -c TiO2 # -c {chemical formula}
+```
+Here, the term following `-c` represents the chemical formula of an amorphous which the user want to obtain. By executing the genBulk.py script, `POSCAR_{mp_id}` file will be generated. 
+```ruby
+python genSurface.py -p CONTCAR -m 110 -t 20 -v 10 # -p {path to the relaxed bulk crystal structure file} -m {Miller index} -t {minimum thickness of slab} -v {thickness of vacuum}
+```
+```ruby
+python genInterface.py -s POSCAR_substrate -f POSCAR_film # -s {path to the surface structure file as a substrate} -f {path to the surface structure file as a film}
+```
+
+
 ### **Mass transport parameter**
 ---
 ### Preparations

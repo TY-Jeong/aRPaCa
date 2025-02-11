@@ -132,3 +132,26 @@ python frequency.py # to obtain effective frequency and effective coordination n
 Please use `-h` options, for other available options.
 
 (*will be updated after publication*)
+
+
+### **Electronic Conductivity**
+---
+|Scipt|Explanation|Note|
+|-----|-----------|----|
+|**setKGcalc.py**|Create calculation set for Kubo-Greenwood conductivity calculation| |
+|**setKGstep.py**|Do works between each step of Kubo-Greenwood conductivity calculation| |
+|**condOutputAnalyze.py**|Analyze the conductivity calculation results| |
+
+simple example:
+After your MD simulation, there should be the `ensembles` directory.
+`python setKGcalc.py` to prepare for KG calculation.
+
+Do the following calculations under each temperature/snapshot directory.
+
+0. (VASP) structure relax
+1. (under 1_wave directory) (VASP) get WAVECAR
+2. (under 2_nabla directory) (GreeKuP-recompiled VASP) get optic property
+3. (under 3_cond directory) (GreeKuP) get electronic conductivity
+after each step, `python setKGstep.py` to prepare for next calcuation step.
+
+After the electronic conductity is calculated, `python condOutputAnalyze.py` to print statistics.

@@ -82,12 +82,13 @@ python genSurface.py -p CONTCAR -m 110 -t 20 -v 10
 # -t {minimum thickness of slab in Å}
 # -v {vacuum thickness in Å}
 ```
+Here, the term following `-p` represents the path to the relaxed bulk crystal structure file that the user wants to use. The second term following `-m` represents the Miller index of the surface plane. The third term following `-t` represents the minimum thickness of the slab in Å. The fourth term following `-v` represents the vacuum thickness in Å. By executing the script, `{chemical_formula}_slab-{miller_index}.vasp` file will be generated.
 ```ruby
 python genInterface.py -s POSCAR_substrate -f POSCAR_film 
 # -s {path to the surface structure file as a substrate}
 # -f {path to the surface structure file as a film}
 ```
-
+Here, the term following `-s` represents the path to the surface structure file that the user wants to use as a substrate. The second term following `-f` represents the path to the surface structure file that the user wants to use as a film. By executing the script, `interface.vasp` file will be generated.
 
 ### **Mass transport parameter**
 ---

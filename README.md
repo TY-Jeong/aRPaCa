@@ -76,7 +76,11 @@ python genBulk.py -c TiO2 # -c {chemical formula}
 ```
 Here, the term following `-c` represents the chemical formula of an amorphous which the user want to obtain. By executing the genBulk.py script, `POSCAR_{mp_id}` file will be generated. 
 ```ruby
-python genSurface.py -p CONTCAR -m 110 -t 20 -v 10 # -p {path to the relaxed bulk crystal structure file} -m {Miller index} -t {minimum thickness of slab} -v {thickness of vacuum}
+python genSurface.py -p CONTCAR -m 110 -t 20 -v 10 
+# -p {path to the relaxed bulk crystal structure file} 
+# -m {miller index as three integers} 
+# -t {minimum thickness of slab in Å}
+# -v {vacuum thickness in Å}
 ```
 ```ruby
 python genInterface.py -s POSCAR_substrate -f POSCAR_film # -s {path to the surface structure file as a substrate} -f {path to the surface structure file as a film}

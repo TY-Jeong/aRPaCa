@@ -57,6 +57,11 @@ The list of sripts are summarized below:
 
 ### **Amorpohus generation**
 ---
+|Scipt|Explanation|Note|
+|-----|-----------|----|
+|**genAmorphous.py**|Generate amorphous structure| |
+
+
 Simple example:
 
 ```ruby
@@ -120,6 +125,12 @@ Here, five AIMD simulations, labeled as 01, 02, ..., 05, were performed at each 
 
 ### Einstein relation
 ---
+
+|Scipt|Explanation|Note|
+|-----|-----------|----|
+|**einstein.py**|Calculate diffusion coefficient based on Einstein relation| |
+
+
 Simple example:
 ```ruby
 python einstein.py O 50 # {symbol of moving atom}, {x-range of msd plot}
@@ -131,6 +142,12 @@ Please use `-h` options, for other available options. If you used this script, p
 
 ### Effective diffusion parameter
 ---
+
+|Scipt|Explanation|Note|
+|-----|-----------|----|
+|**trajectory.py**|Determine trajectory of vacancy <br> Calculate effective diffusion parameters (except for frequency)|*not opened*<br>(*papar in preparation*)|
+|**frequency.py**|Calculate jump attempt frequency |*not opened*<br>(*papar in preparation*)|
+
 simple example:
 ```ruby
 python trajectory.py O 0.1 # {symbol of moving atom}, {time interval}

@@ -1,6 +1,7 @@
 # aRPaCa
 ---
-**aRPaCa** (***a****b-initio* **R**RAM **Pa**rameter **Ca**lculator) is a python package for calculating parameters used in RRAM simulations, which contains modules for pre- and post-processing of DFT calculations performed using VASP. (Note: current version of aRPaCa is developed based on VASP 5.4.4.)
+**aRPaCa** (***a****b-initio* **R**RAM **Pa**rameter **Ca**lculator) is a python package for calculating parameters used in RRAM simulations, which contains modules for pre- and post-processing of DFT calculations performed using VASP.
+(**Note**: current version of aRPaCa is developed based on VASP 5.4.4.)
 
 
 The development of aRPaCa was supported by a grant from the National Research Foundation under MSIT Korea, awarded to **Dr. Jung-Hae Choi** (**2022M3F3A2A01076569**)

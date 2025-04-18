@@ -3,32 +3,48 @@ import argparse
 from arpaca.utils import *
 import time
 
-parser = argparse.ArgumentParser(description="Script to make surface POSCAR file.")
-parser.add_argument("contcar_path", type=str, help="Path to the bulk CONTCAR file.")
+parser = argparse.ArgumentParser(description="Generate a surface for VASP input.")
+
+parser.add_argument(
+    "--structure_path",
+    "-p",
+    type=str,
+    default=None,
+    help="Path to the structure file (default: None)")
+
+parser.add_argument(
+    "--miller_index",
+    "-m",
+    type=int,
+    nargs=3,
+    default=None,
+    help="Miller index as three integers (e.g., 1 1 1) (default: None)")
+
+parser.add_argument(
+    "--thickness",
+    "-t",
+    type=float,
+    default=20.0,
+    help="Minimum thickness of the slab in Å (default: 20)")
+
+parser.add_argument(
+    "--vacuum",
+    "-v",
+    type=float,
+    default=10.0,
+    help="Vacuum thickness in Å (default: 10)")
+
 args = parser.parse_args()
-contcar_path = args.contcar_path
+if all(getattr(args, arg) == parser.get_default(arg) for arg in vars(args)):
+	print("No arguments provided. Use the '--help' option to see usage details if you want.")
 
-if not os.path.isfile(contcar_path):
-    print(f"Error: The file {contcar_path} does not exist.")
-    exit(1)
+structure_path=args.structure_path
+miller_index=args.miller_index
+thickness=args.thickness
+vacuum=args.vacuum
 
+surface=GenSurface()
+surface.slice_slab_cartesian()
+#surface.slice_slab_direct()
 
-# RuO2_surface=GenSurface(layer_num = 9, vacuum=15)
-# RuO2_surface.view_structure()
-
-#RuO2_surface=GenSurface("Project/Bulk/RuO2/Relax/CONTCAR", (1,1,0), layer_num = 9, vacuum=15)
-# RuO2_surface=GenSurface(structure_file="Project/Bulk/RuO2/Relax/CONTCAR", layer_num = 9, vacuum=15)
-# RuO2_surface.view_structure()
-# RuO2_surface.slice_slab_cartesian()
-# #RuO2_surface.slice_slab_cartesian(20.1, 35.44)
-# RuO2_surface.view_structure()
-
-# #TiO2_surface=GenSurface('Project/Bulk/TiO2/Relax/CONTCAR', (1,1,0), layer_num = 9, vacuum=15)
-surface=GenSurface(contcar_path, layer_num = 9, vacuum=15)
-surface.slice_slab_cartesian(20.2, 42.6)
-#TiO2_surface.xy_shift_direct(0.5,0.5)
-surface.view_structure()
-
-time.sleep(4)
-surface.cbs_surface_maker(layer_num = 2)
-surface.view_cbs_structure()
+surface.cbs_surface_maker()

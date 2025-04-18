@@ -5,4 +5,5 @@ vasp=/home/share/vasp.5.4.4/bin/vasp_std
 vaspkit=/home/share/vaspkit.1.5.1/bin/vaspkit
 qe_pw=/home/share/qe-6.6/bin/pw.x
 qe_pwcond=/home/share/qe-6.6/bin/pwcond.x
+qe_pseudo=/home/ysj/program/pslibrary/pbe/PSEUDOPOTENTIALS
 mp_api=1JhYvCZohqM8q8YZ5fHCgIHIJZ8a2o35

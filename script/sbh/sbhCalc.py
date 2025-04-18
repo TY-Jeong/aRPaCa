@@ -5,8 +5,8 @@ from arpaca.sbh.sbh import *
 from datetime import datetime
 
 parser = argparse.ArgumentParser(description="Script to get VASP results.")
-parser.add_argument("result_path", type=str, help="Path for results.")
-parser.add_argument("temperature", type=str, help="Absolute temperature.")
+parser.add_argument("-r", "--result_path", type=str, help="Path to parsed results.")
+parser.add_argument("-t", "--temperature", type=str, help="Absolute temperature.")
 
 args = parser.parse_args()
 result_path = args.result_path

@@ -4,18 +4,22 @@ import argparse
 from arpaca.utils import *
 
 parser = argparse.ArgumentParser(description="Script to get VASP results.")
-parser.add_argument("result_path", type=str, help="Path for results.")
+
+parser.add_argument(
+    "--path",
+    "-p",
+    type=str,
+    default=None,
+    required=False,
+    help="Path of results of surface calculations")
 
 args = parser.parse_args()
-result_path = args.result_path
-result_dir = os.path.dirname(result_path)
-if result_dir and not os.path.exists(result_dir):
-    os.makedirs(result_dir)
+surface_path = args.path
 
-result = GetSBHResult(result_path)
+if surface_path is None:
+    print("No surface path provided. Use the '--help' option to see usage details if you want.\n")
+else:
+    print(f"Processing QE inputs with: {surface_path}")
 
-pseudopotentials = {
-    "Ti": "Ti.pbe-spn-kjpaw_psl.1.0.0.UPF",
-    "O": "O.pbe-n-kjpaw_psl.1.0.0.UPF"
-}
-result.qe_setup(pseudopotentials, scheduler='pbs')
+result = GetSBHResult()
+result.qe_setup( surface_path, scheduler='Auto') 

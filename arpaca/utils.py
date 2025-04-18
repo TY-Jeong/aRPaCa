@@ -8,7 +8,7 @@ import subprocess
 import xml.etree.ElementTree as ET
 from collections import Counter
 import tkinter as tk
-from tkinter import font, ttk, filedialog
+from tkinter import font, ttk, filedialog, messagebox
 from ase.io import read, write
 from ase.build import surface, make_supercell
 from ase import Atoms
@@ -600,8 +600,15 @@ class BasicTool:
                     data[key.strip()] = value.strip()
         return data.get(target)
 
-    def set_project_directory(self):
-        self.project_directory = input("Enter project directory name: ")
+    def set_project_directory(self, default_dir=None):
+        if default_dir == None:
+            default_dir = ''
+        else:
+            default_dir_txt = " (default: %s)"%default_dir
+        self.project_directory = input("Enter project directory name%s: "%default_dir_txt).strip()
+        if self.project_directory == '':
+            self.project_directory = default_dir
+
         self.make_directory(self.project_directory)
         self.project_directory = os.path.abspath(self.project_directory)
 
@@ -628,8 +635,52 @@ class BasicTool:
 
         self.scheduler = 'bash'
 
-    def make_runfile(self, runfile_name, nodes, processors, queue_name, scheduler=None):
-        if scheduler == None:
+    def make_runfile(self, run_dir, runfile_name, nodes, processors, queue_name, scheduler):
+        def submit(event=None):
+            self.run_dir = run_dir_entry.get()
+            self.runfile_name = runfile_entry.get()
+            self.nodes = nodes_entry.get()
+            self.processors = processors_entry.get()
+            self.queue_name = queue_entry.get()
+            self.scheduler = scheduler_entry.get()
+
+            print("=== Runfile Saved ===")
+            print(f"Run Directory: {self.run_dir}")
+            print(f"Runfile Name: {self.runfile_name}")
+            print(f"Nodes: {self.nodes}")
+            print(f"Processors: {self.processors}")
+            print(f"Queue Name: {self.queue_name}")
+            print(f"Scheduler: {self.scheduler}\n")
+
+            top.destroy()
+
+        top = tk.Tk()
+        top.title("Configure Runfile in %s"%run_dir)
+
+        def labeled_entry(master, label, default):
+            frame = ttk.Frame(master)
+            frame.pack(padx=10, pady=5, fill='x')
+            ttk.Label(frame, text=label, width=20).pack(side='left')
+            entry = ttk.Entry(frame, width=100)
+            entry.insert(0, default if default is not None else "")
+            entry.pack(side='left', fill='x', expand=True)
+            return entry
+
+        run_dir_entry = labeled_entry(top, "Run Directory:", run_dir)
+        runfile_entry = labeled_entry(top, "Runfile Name:", runfile_name)
+        nodes_entry = labeled_entry(top, "Nodes:", nodes)
+        processors_entry = labeled_entry(top, "Processors:", processors)
+        queue_entry = labeled_entry(top, "Queue Name:", queue_name)
+        scheduler_entry = labeled_entry(top, "Scheduler:", scheduler)
+
+        submit_button = ttk.Button(top, text="Submit", command=submit)
+        submit_button.pack(pady=10)
+
+        top.bind('<Return>', submit)
+
+        top.mainloop()
+
+        if scheduler.strip().lower() == "auto":
             self.check_scheduler()
         elif (scheduler=='pbs') or (scheduler=='slurm') or (scheduler=='bash') :
             self.scheduler = scheduler
@@ -637,13 +688,13 @@ class BasicTool:
             print('Error: Invalid scheduler type !!!')
             raise TypeError
 
-        with open(runfile_name,'w') as runfile:
+        with open(os.path.join(self.run_dir, self.runfile_name),'w') as runfile:
             runfile.write("#!/bin/sh\n")
             if self.scheduler == 'pbs':
                 runfile.write(f"#PBS -o sys_mesg.log -N SBH\n")
                 runfile.write("#PBS -j oe\n")
-                runfile.write(f"#PBS -l nodes={nodes}:ppn={processors}\n")
-                runfile.write(f"#PBS -q {queue_name}\n")
+                runfile.write(f"#PBS -l nodes={self.nodes}:ppn={self.processors}\n")
+                runfile.write(f"#PBS -q {self.queue_name}\n")
                 runfile.write("\n")
                 runfile.write("NUMBER=`wc -l < $PBS_NODEFILE`\n")
                 runfile.write("cd $PBS_O_WORKDIR\n")
@@ -651,9 +702,9 @@ class BasicTool:
             elif self.scheduler == 'slurm':
                 runfile.write("#SBATCH --output=sys_mesg.log\n")
                 runfile.write("#SBATCH --job-name=SBH\n")
-                runfile.write(f"#SBATCH --ntasks={processors}\n")
-                runfile.write(f"#SBATCH --nodes={nodes}\n")
-                runfile.write(f"#SBATCH --partition={queue_name}\n")
+                runfile.write(f"#SBATCH --ntasks={self.processors}\n")
+                runfile.write(f"#SBATCH --nodes={self.nodes}\n")
+                runfile.write(f"#SBATCH --partition={self.queue_name}\n")
                 runfile.write("\n")
                 runfile.write("cd $SLURM_SUBMIT_DIR\n")
                 runfile.write("\nmpirun -np $number %s > stdout.dat\n"%(self.exe_path))
@@ -668,6 +719,16 @@ class BasicTool:
             if not os.path.exists(path):
                     not_found_paths.append(required_path)
         return not_found_paths
+
+    def find_subdirs(self, target_name):
+        matches = []
+        current_dir = os.getcwd()
+        for root, dirs, files in os.walk(current_dir):
+            for d in dirs:
+                if d == target_name:
+                    matches.append(os.path.join(root,d))
+        return matches
+
 
     def path_checker(self, parent_dir, required_paths):
         not_found_paths = self.find_matching_path(parent_dir, required_paths)
@@ -692,13 +753,31 @@ class BasicTool:
 
     def open_filedialog(self, title=None):
         root = tk.Tk()
-        if title == None:
-            file_path = filedialog.askopenfilename()
-        elif isinstance(title, str):
-            file_path = filedialog.askopenfilename(title=title)
-        root.destroy() 
-        return file_path
+        root.withdraw() 
 
+        if title is None:
+            selected_path = filedialog.askopenfilename()
+        elif isinstance(title, str):
+            selected_path = filedialog.askopenfilename(title=title)
+
+        if not selected_path:
+            messagebox.showwarning("No Selection", "No file was selected!")
+            return None
+
+        if os.path.exists(selected_path):
+            confirm = messagebox.askyesno(
+                "Confirm Path",
+                f"Processing with selected path:\n\n{selected_path}\n\nIs this correct?"
+            )
+            if confirm:
+                root.destroy()
+                return selected_path
+            else:
+                messagebox.showinfo("Try Again", "Please select the correct path.")
+                return None
+        else:
+            messagebox.showerror("Invalid Path", "The selected path does not exist.")
+            return None
 
 class VASPInput(BasicTool):
     def __init__(self, potcar='pbe', charge = 0):
@@ -776,9 +855,9 @@ class VASPInput(BasicTool):
         else:
             self.prefix_pot = self.read_path_file('POT_LDA')
 
+
     def read_path_vasp(self):
         self.exe_path = self.read_path_file('vasp')
-
 
 class QE_Input(BasicTool):
     def __init__(self):
@@ -790,26 +869,57 @@ class QE_Input(BasicTool):
     def read_path_pwcond(self):
         self.exe_path = self.read_path_file('qe_pwcond') + ' < qe.in'
 
+    def read_path_qe_pseudo(self):
+        self.prefix_qe_pseudo = self.read_path_file('qe_pseudo')
 
 class GenBulk(BasicTool):
     def __init__(self,chemsys_formula_mpids = None):
         super().__init__()
         self.API_KEY = self.read_path_file('mp_api')
-        self.root_directory = os.getcwd()
+        root_directory = os.getcwd()
         self.iter = False
-        self.set_project_directory()
+        self.set_project_directory('Bulk')
 
-        if chemsys_formula_mpids != None:
-            try:
-                int(chemsys_formula_mpids)
-                chemsys_formula_mpids = int(chemsys_formula_mpids)
-                chemsys_formula_mpids = 'mp-%s'%chemsys_formula_mpids
-                print('\n\n############### Initialize GenBulk to make bulk POSCAR for %s ###############\n'%chemsys_formula_mpids)
-                self.mpid_poscar_write(chemsys_formula_mpids)
-    
-            except ValueError:
-                print('\n\n############### Initialize GenBulk to make bulk POSCAR for %s ###############\n'%chemsys_formula_mpids)
-                self.formula_poscar_write(chemsys_formula_mpids)
+        if chemsys_formula_mpids == None:
+            def on_submit(event=None):
+                formula = entry.get()
+                if formula:
+                    confirm = messagebox.askyesno("Confirm Input", f"You entered: {formula}\nIs this correct?")
+                    if confirm:
+                        root.quit()
+                        root.result = formula
+                    else:
+                        entry.delete(0, tk.END)
+                        messagebox.showinfo("Try Again", "Please enter the chemical formula again.")
+                else:
+                    messagebox.showwarning("Input Error", "Please enter a chemical formula.")
+        
+            root = tk.Tk()
+            root.title("Chemical Formula Input")
+            root.geometry("300x120")
+        
+            tk.Label(root, text="Enter the chemical formula (e.g., TiO2):").pack(pady=10)
+            entry = tk.Entry(root, width=20)
+            entry.pack(pady=5)
+            entry.bind("<Return>", on_submit)
+        
+            tk.Button(root, text="Submit", command=on_submit).pack(pady=10)
+        
+            root.result = None  
+            root.mainloop()
+            root.destroy()
+            
+            chemsys_formula_mpids = root.result
+            
+        try:
+            int(chemsys_formula_mpids)
+            chemsys_formula_mpids = int(chemsys_formula_mpids)
+            chemsys_formula_mpids = 'mp-%s'%chemsys_formula_mpids
+            print('\n\n############### Initialize GenBulk to make bulk POSCAR for %s ###############\n'%chemsys_formula_mpids)
+            self.mpid_poscar_write(chemsys_formula_mpids)
+        except ValueError:
+            print('\n\n############### Initialize GenBulk to make bulk POSCAR for %s ###############\n'%chemsys_formula_mpids)
+            self.formula_poscar_write(chemsys_formula_mpids)
 
     def formula_poscar_write(self,chemsys_formula):
         with MPRester(self.API_KEY, mute_progress_bars=True) as mpr:
@@ -883,7 +993,7 @@ class GenBulk(BasicTool):
 
     def view_structure(self, file_name_mpid):
         self.set_bulk(file_name_mpid)
-        viewer = view(self.bulk, show_bonds=True)
+        viewer = view(self.bulk)
 
     def view_data(self):
         def on_item_click(event):
@@ -926,47 +1036,41 @@ class GenBulk(BasicTool):
         frame.grid_columnconfigure(0, weight=1)
         frame.grid_rowconfigure(0, weight=1)
         root.mainloop()
-
-
         
 class GenSurface(VASPInput):
-    def __init__(self, structure_file=None, miller_index=None, layer_num=5, vacuum=15):
+    def __init__(self, structure_file=None, miller_index=None, min_thickness=20, vacuum=10):
+        self.set_project_directory('Surface')
         self.check_object_type(structure_file)
-        self.vacuum = vacuum
         formula = self.structure.get_chemical_formula()
         formula = Composition(formula)
         self.formula = formula.reduced_formula
-        if miller_index == None:
-            self.get_miller_index()
-        else:
-            self.miller_index = miller_index
-        self.layer_num = layer_num
+        self.get_miller_index(miller_index)
+        self.get_thickness(min_thickness, vacuum)
         print('\n\n############### Initialize GenSurface to make slab POSCAR for %s ###############\n'%self.formula)
         self.slab_maker()
 
     def check_object_type(self, obj):
         if obj == None:
-            self.structure = read(self.open_filedialog())
-            self.set_project_directory()
+            self.structure = read(self.open_filedialog('Select relaxed bulk structure file (e.g., CONTCAR)'))
         elif isinstance(obj, str):
             try:
                 self.structure = read(obj)
-                self.set_project_directory()
             except:
                 print('Error: Check your POSCAR file !!')
                 raise FileNotFoundError
         else:
             raise TypeError
 
-    def get_miller_index(self):
+    def get_miller_index(self, miller_index):
+        if miller_index != None:
+            self.miller_index = miller_index
         root = tk.Tk()
         root.title("Miller Indices of surface")
-        root.geometry("400x150")
+        root.geometry("400x120")
 
         label_prompt = tk.Label(root, text="Please enter the Miller Indices of %s (e.g., (100))"%self.formula)
         label_prompt.pack(pady=10)
 
-        # Input fields
         frame_input = tk.Frame(root)
         frame_input.pack(pady=10)
 
@@ -982,20 +1086,70 @@ class GenSurface(VASPInput):
         entry_l = tk.Entry(frame_input, width=5)
         entry_l.grid(row=0, column=5, padx=5)
 
-        def on_submit():
+        def on_submit(event=None):
             h, k, l = entry_h.get(), entry_k.get(), entry_l.get()
             if h and k and l:
                 miller_index = f"({h}{k}{l})"
-                self.miller_index = (int(h), int(k), int(l))  # Save the entered Miller index
-                root.destroy()  # Close the window
+                self.miller_index = (int(h), int(k), int(l))
+                root.destroy()
             else:
                 label_result.config(text="Please enter all values.")
 
         button_submit = tk.Button(root, text="Submit", command=on_submit)
         button_submit.pack(pady=10)
-
+        root.bind("<Return>", on_submit)
         label_result = tk.Label(root)
         label_result.pack(pady=10)
+        root.mainloop()
+
+    def get_thickness(self, min_thickness, vacuum_thickness):
+        self.vacuum = vacuum_thickness
+        self.slab_min_thickness = min_thickness
+        def on_submit(event=None):
+            try:
+                slab_thickness = float(entry_slab.get())
+                vacuum_thickness = float(entry_vacuum.get())
+                
+                if slab_thickness <= 0 or vacuum_thickness < 0:
+                    raise ValueError("Thickness must be positive, and vacuum cannot be negative.")
+
+                confirm = messagebox.askyesno("Confirm Input", 
+                                              f"Slab Thickness: {slab_thickness} Å\nVacuum Thickness: {vacuum_thickness} Å\nIs this correct?")
+                
+                if confirm:
+                    self.slab_min_thickness = slab_thickness
+                    self.vacuum = vacuum_thickness
+                    root.destroy()
+                else:
+                    messagebox.showinfo("Try Again", "Please enter the values again.")
+                    entry_slab.delete(0, tk.END)
+                    entry_vacuum.delete(0, tk.END)
+
+            except ValueError as e:
+                messagebox.showerror("Input Error", f"Invalid input: {e}")
+                entry_slab.delete(0, tk.END)
+                entry_vacuum.delete(0, tk.END)
+
+        root = tk.Tk()
+        root.title("Slab and Vacuum Input")
+        root.geometry("300x150")
+
+        tk.Label(root, text="Minimum Slab Thickness (Å):").pack(pady=5)
+        entry_slab = tk.Entry(root)
+        entry_slab.pack(pady=5)
+        
+        if self.slab_min_thickness is not None:
+            entry_slab.insert(0, str(self.slab_min_thickness))
+
+        tk.Label(root, text="Vacuum Thickness (Å):").pack(pady=5)
+        entry_vacuum = tk.Entry(root)
+        entry_vacuum.pack(pady=5)
+
+        if self.vacuum is not None:
+            entry_vacuum.insert(0, str(self.vacuum))
+
+        tk.Button(root, text="Submit", command=on_submit).pack(pady=10)
+        root.bind("<Return>", on_submit)
         root.mainloop()
 
     def calculate_thickness(self):
@@ -1005,7 +1159,7 @@ class GenSurface(VASPInput):
         self.thickness = max_z - min_z
 
     def semiconductor_check(self):
-        def on_button_click():
+        def on_button_click(event=None):
             if self.var.get() == 1:
                 self.is_semi = True
             else:
@@ -1016,42 +1170,126 @@ class GenSurface(VASPInput):
         root.title("Semiconductor check")
         label = tk.Label(root, text="%s: Semiconductor or not?"%self.formula, font=("Arial", 14))
         label.pack(pady=20)
-        yes_check = tk.Checkbutton(root, text="Yes", variable=self.var, onvalue=1, offvalue=0, font=("Arial", 12))
+        yes_check = tk.Radiobutton(root, text="Yes (Semiconductor)", variable=self.var, value=1, font=("Arial", 12))
         yes_check.pack(pady=10)
-        no_check = tk.Checkbutton(root, text="No", variable=self.var, onvalue=0, offvalue=1, font=("Arial", 12))
+        no_check = tk.Radiobutton(root, text="No (Metal)", variable=self.var, value=0, font=("Arial", 12))
         no_check.pack(pady=10)
         btn = tk.Button(root, text="Submit", font=("Arial", 12), command=on_button_click)
         btn.pack(pady=20)
+        root.bind("<Return>", on_button_click)
         root.mainloop()
 
-    def cbs_surface_maker(self, layer_num):
+    def cbs_surface_maker(self):
         self.semiconductor_check()
+        def on_submit(event=None):
+            try:
+                layer_num = int(entry.get())
+                if layer_num <= 0:
+                    raise ValueError("The number of layers must be a positive integer.")
+                confirm = messagebox.askyesno(
+                    "Confirm Input", f"You entered: {layer_num}\nIs this correct?"
+                )
+                if confirm:
+                    root.result = layer_num
+                    root.quit()
+                else:
+                    entry.delete(0, tk.END)
+                    messagebox.showinfo("Try Again", "Please enter the  minimal number of surface layer again.")
+            except ValueError:
+                messagebox.showerror("Input Error", "Please enter a valid positive integer.")
         if self.is_semi:
+            root = tk.Tk()
+            root.title("Minimal Surface Layer Input")
+            root.geometry("400x120")
+            tk.Label(root, text="Enter the minimal number of surface layers:").pack(pady=10)
+            entry = tk.Entry(root, width=20)
+            entry.pack(pady=5)
+            entry.bind("<Return>", on_submit)
+            tk.Button(root, text="Submit", command=on_submit).pack(pady=10)
+            root.mainloop()
+            layer_num = root.result
+            root.destroy()
             self.cbs_slab = surface(self.structure, self.miller_index, layers=layer_num, periodic=True) # layers=self.layer_num, 
             self.make_poscar('%s/cbs_surface.vasp'%(self.project_directory), self.cbs_slab)
-            print(' &&&&& Generating slab POSCAR for cbs calculation at "%s/cbs_surface.vasp" &&&&&'%(self.project_directory))
+            print(' &&&&& Generating POSCAR for cbs calculation at "%s/cbs_surface.vasp" &&&&&'%(self.project_directory))
+            self.view_cbs_structure()
 
     def view_cbs_structure(self):
         if hasattr(self, 'cbs_slab'):
-            view(self.cbs_slab)
-     
+            view(self.cbs_slab, block=True)
 
     def slab_maker(self):
-        self.slab = surface(self.structure, self.miller_index, layers=self.layer_num, vacuum=self.vacuum, periodic=True)
-        self.calculate_thickness()
+        stop_condition = False
+        self.layer_num = 1
+        while not stop_condition:
+            self.layer_num += 1
+            self.slab = surface(self.structure, self.miller_index, layers=self.layer_num, vacuum=self.vacuum, periodic=True)
+            self.calculate_thickness()
+            if self.thickness > self.slab_min_thickness:
+                stop_condition = True
+
         print(' * Generating slab POSCAR for %s at "%s/%s_slab-%s.vasp"'%(self.formula, self.project_directory , self.formula, ''.join(map(str, self.miller_index))))
         self.make_poscar('%s/%s_slab-%s.vasp'%(self.project_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
         print('  -. %s %s slab thickness is %.2f Å\n'%(self.formula, ''.join(map(str, self.miller_index)),self.thickness))
+        self.view_structure()
 
-    def slice_slab_direct(self, z_min, z_max):
-        print(os.get_cwd())
+    def slice_slab_direct(self, z_min=None, z_max=None):
+        if z_min is not None and z_max is not None:
+            self.z_min = z_min
+            self.z_max = z_max
+        elif (z_min is None) or (z_max is None):
+            root.destroy()
+            root = tk.Tk()
+            root.title("Slab Slicing Range (Direct Coordinates)")
+            root.geometry("800x120")
+
+            label_prompt = tk.Label(root, text="Please enter the slicing range of the slab in Direct coordinates (e.g., Min: 0.2, Max: 0.35)")
+            label_prompt.pack(pady=10)
+
+            frame_input = tk.Frame(root)
+            frame_input.pack(pady=10)
+
+            tk.Label(frame_input, text="Min (Direct):").grid(row=0, column=0, padx=5)
+            entry_min = tk.Entry(frame_input, width=10)
+            entry_min.grid(row=0, column=1, padx=5)
+
+            tk.Label(frame_input, text="Max (Direct):").grid(row=0, column=2, padx=5)
+            entry_max = tk.Entry(frame_input, width=10)
+            entry_max.grid(row=0, column=3, padx=5)
+
+            def on_submit(event=None):
+                min_value, max_value = entry_min.get(), entry_max.get()
+                if min_value and max_value:
+                    try:
+                        self.z_min = float(min_value)
+                        self.z_max = float(max_value)
+                        if self.z_min < self.z_max:  
+                            root.destroy() 
+                        else:
+                            label_result.config(text="Min value must be less than Max value.")
+                    except ValueError:
+                        label_result.config(text="Please enter valid numerical values.")
+                else:
+                    label_result.config(text="Please enter both values.")
+            
+            button_submit = tk.Button(root, text="Submit", command=on_submit)
+            button_submit.pack(pady=10)
+            root.bind("<Return>", on_submit)
+            label_result = tk.Label(root)
+            label_result.pack(pady=10)
+            root.mainloop()
+
+        if self.z_min == None or self.z_max == None:
+            return
+
         self.z_coords_direct = self.slab.get_scaled_positions()[:, 2]  
-        mask = (self.z_coords_direct >= z_min) & (self.z_coords_direct <= z_max)
+        mask = (self.z_coords_direct >= self.z_min) & (self.z_coords_direct <= self.z_max)
         self.slab = self.slab[mask]
         self.calculate_thickness()
-        print(' * Slicing %s slab from z-coordinate from %.2f to %.2f'%(self.formula, z_min, z_max))
+        print(' * Slicing %s slab from z-coordinate from %.2f to %.2f'%(self.formula, self.z_min, self.z_max))
         self.make_poscar('%s/%s_slab-%s.vasp'%(self.project_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
         print('  -. Sliced %s slab thickness is %.2f Å\n'%(self.formula,self.thickness))
+        self.view_structure()
 
     def slice_slab_cartesian(self, z_min=None, z_max=None):
         self.z_min = z_min
@@ -1059,9 +1297,9 @@ class GenSurface(VASPInput):
         if (self.z_min == None) or (self.z_min == None):
             root = tk.Tk()
             root.title("Slab Slicing Range")
-            root.geometry("600x150")
+            root.geometry("600x120")
 
-            label_prompt = tk.Label(root, text="Please enter the slicing range of the slab in Å (e.g., Min: 20.1, Max: 35.44)")
+            label_prompt = tk.Label(root, text="Please enter the slicing range of the slab in Å (e.g., Min: 20.1 Å, Max: 35.44 Å)")
             label_prompt.pack(pady=10)
 
             frame_input = tk.Frame(root)
@@ -1075,7 +1313,7 @@ class GenSurface(VASPInput):
             entry_max = tk.Entry(frame_input, width=10)
             entry_max.grid(row=0, column=3, padx=5)
 
-            def on_submit():
+            def on_submit(event=None):
                 min_value, max_value = entry_min.get(), entry_max.get()
                 if min_value and max_value:
                     try:
@@ -1091,9 +1329,13 @@ class GenSurface(VASPInput):
                     label_result.config(text="Please enter both values.")
             button_submit = tk.Button(root, text="Submit", command=on_submit)
             button_submit.pack(pady=10)
+            root.bind("<Return>", on_submit)
             label_result = tk.Label(root)
             label_result.pack(pady=10)
             root.mainloop()
+
+        if self.z_min == None or self.z_max == None:
+            return
 
         self.z_coords = self.slab.get_positions()[:, 2]
         mask = (self.z_coords >= self.z_min) & (self.z_coords <= self.z_max)
@@ -1102,6 +1344,7 @@ class GenSurface(VASPInput):
         print(' * Slicing %s slab from %.2fÅ to %.2fÅ'%(self.formula, self.z_min, self.z_max))
         self.make_poscar('%s/%s_slab-%s.vasp'%(self.project_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
         print('  -. Slice %s slab thickness is %.2f Å\n'%(self.formula,self.thickness))
+        self.view_structure()
 
     def xy_shift_direct(self, x, y):
         positions_direct = self.slab.get_scaled_positions()
@@ -1116,26 +1359,30 @@ class GenSurface(VASPInput):
         self.make_poscar('%s/%s_slab-%s.vasp'%(self.project_directory,self.formula, ''.join(map(str, self.miller_index))), self.slab)
 
     def view_structure(self):
-        view(self.slab)
+        view(self.slab, block=True)
 
 class GenInterface(VASPInput):
-    def __init__(self, substrate_surface, film_surface):
+    def __init__(self, substrate_surface=None, film_surface=None):
         """
-        substrate_surface: str(slab POSCAR filename) | GenSurface
-        film_surface: str(slab POSCAR filename) | GenSurface
+        substrate_surface: str(slab POSCAR filename)
+        film_surface: str(slab POSCAR filename)
         """
-        self.substrate = self.check_object_type(substrate_surface)
+        self.shift = False
+        self.set_project_directory('Interface')
+        self.substrate = self.check_object_type(substrate_surface,'substrate')
         self.substrate_formula = self.formula
-        self.film = self.check_object_type(film_surface)
+        self.film = self.check_object_type(film_surface, 'film')
         self.film_formula = self.formula
-        self.set_project_directory()
         print('\n\n############### Initialize GenInterface to make interface POSCAR for %s/%s ###############\n'%(self.substrate_formula,self.film_formula))
         self.editing_directory = self.project_directory + '/Edit'
         self.make_directory(self.editing_directory)
+        self.lattice_adjustment()
 
 
-    def check_object_type(self, obj):
-        if isinstance(obj, GenSurface):
+    def check_object_type(self, obj, stack):
+        if obj == None:
+            slab = read(self.open_filedialog('Select surface structure file of %s'%stack))
+        elif isinstance(obj, GenSurface):
             slab = obj.slab
         elif isinstance(obj, str):
             try:
@@ -1150,7 +1397,7 @@ class GenInterface(VASPInput):
         self.formula = formula.reduced_formula
         return slab
 
-    def interface_maker(self, spacing = 2, vacuum = 10):
+    def interface_maker(self, spacing = None, vacuum = None):
         def align_substrate_z0(self):
             min_z = np.min(self.substrate_supercell.positions[:, 2]) 
             self.substrate_supercell.translate([0, 0, -min_z])
@@ -1165,24 +1412,146 @@ class GenInterface(VASPInput):
             max_z = np.max(combined_positions[:, 2])
             combined_symbols = self.substrate_supercell.get_chemical_symbols() + self.film_lattice_matched.get_chemical_symbols()
             combined_cell = self.substrate_supercell.get_cell() 
-            if self.vacuum < spacing:
-                self.vacuum = spacing
+            if self.vacuum < self.spacing:
+                self.vacuum = self.spacing
             combined_cell = self.lattice_z_transform(combined_cell, [0, 0, self.vacuum + max_z])
             combined_pbc = self.substrate_supercell.get_pbc()
             self.interface = Atoms(symbols=combined_symbols, positions=combined_positions, cell=combined_cell, pbc=combined_pbc)
+            print(' * Generating interface POSCAR at "%s/interface.vasp"\n'%(self.project_directory))
             self.make_poscar("%s/interface.vasp"%self.project_directory, self.interface)
-            view(self.interface)
+            if self.shift == True:
+                print(' * Generating interface POSCAR at "%s/shifted_interface.vasp"\n'%(self.project_directory))
+                self.make_poscar("%s/shifted_interface.vasp"%self.project_directory, self.interface)
+                self.shift = False
+            view(self.interface, block=True)
 
-        self.spacing = spacing
-        self.vacuum = vacuum
+
+        if vacuum is not None and spacing is not None:
+            self.vacuum = vacuum
+            self.spacing = spacing
+
+        else:
+            def on_submit():
+                try:
+                    if vacuum is None:
+                        self.vacuum = float(vacuum_entry.get())
+                    else:
+                        self.vacuum = vacuum
+                    if spacing is None:
+                        self.spacing = float(spacing_entry.get())
+                    else:
+                        self.spacing = spacing
+                    root.destroy()
+                except ValueError:
+                    messagebox.showerror("Invalid Input", "Please enter valid numbers.")
+    
+            root = tk.Tk()
+            root.title("Creates an interface by specifying the vacuum and spacing")
+    
+            if vacuum is None:
+                tk.Label(root, text="Vacuum Thickness (Å):").grid(row=0, column=0, padx=10, pady=5, sticky="e")
+                vacuum_entry = tk.Entry(root)
+                vacuum_entry.grid(row=0, column=1, padx=10, pady=5)
+                tk.Label(root, text="Length of vacuum region in interface structure.").grid(
+                row=1, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+    
+            if spacing is None:
+                tk.Label(root, text="Interface Spacing (Å):").grid(row=2, column=0, padx=10, pady=5, sticky="e")
+                spacing_entry = tk.Entry(root)
+                spacing_entry.grid(row=2, column=1, padx=10, pady=5)
+                tk.Label(root, text="Spacing between adjacent layers between film and substrate in the structure.").grid(
+                    row=3, column=0, columnspan=2, padx=10, pady=5, sticky="w")
+    
+            submit_button = tk.Button(root, text="Submit", command=on_submit)
+            last_row = 3 if spacing is None else 1
+            submit_button.grid(row=last_row + 1, column=0, columnspan=2, pady=10)
+    
+            root.bind('<Return>', lambda event: on_submit())
+            root.mainloop()
+
         align_substrate_z0(self)
         align_film_on_substrate(self)
-        print(' * Generating interface POSCAR at "%s/interface.vasp"\n'%(self.project_directory))
         create_interface(self)
         return
 
-    def film_xy_shift_direct(self, xy):
-        x, y = xy
+    def film_shift(self, parent=None):
+        def on_confirm(event=None):
+            try:
+                x = float(x_entry.get())
+                y = float(y_entry.get())
+                self.x_value = x
+                self.y_value = y
+    
+                shift_type = self.shift_type.get()
+                if shift_type == "cartesian":
+                    self.film_xy_shift_cartesian(x, y)
+                elif shift_type == "direct":
+                    self.film_xy_shift_direct(x, y)
+                else:
+                    raise ValueError("Invalid shift type selected.")
+    
+                film_shift_window.destroy()
+                if self.interface_maker:
+                    try:
+                        self.interface_maker(self.spacing, self.vacuum)
+                    except AttributeError:
+                        self.interface_maker()
+            except ValueError as e:
+                messagebox.showerror("Input Error", f"Invalid input: {e}")
+
+        self.shift = True
+    
+        film_shift_window = tk.Toplevel(parent)
+        film_shift_window.title("Adjust Film XY Position")
+    
+        self.shift_type = tk.StringVar(value="cartesian")
+        shift_type_frame = tk.Frame(film_shift_window)
+        shift_type_frame.pack(pady=10)
+    
+        label = tk.Label(shift_type_frame, text="Choose a shift type:")
+        label.grid(row=0, column=0, columnspan=2, pady=5)
+    
+        cartesian_radio = tk.Radiobutton(
+            shift_type_frame, text="Cartesian Shift (in Å, absolute distance):",
+            variable=self.shift_type, value="cartesian"
+        )
+        cartesian_radio.grid(row=1, column=0, padx=10, sticky="w")
+    
+        direct_radio = tk.Radiobutton(
+            shift_type_frame, text="Direct Shift (fractional, 0 to 1):",
+            variable=self.shift_type, value="direct"
+        )
+        direct_radio.grid(row=1, column=1, padx=10, sticky="w")
+    
+        shift_type_description = tk.Label(
+            shift_type_frame,
+            text=(
+                "Cartesian: Specify shifts as absolute distances in Å.\n"
+                "Direct: Specify shifts as fractional values (0 to 1) relative to lattice vectors."
+            ),
+            fg="gray", wraplength=300, justify="left"
+        )
+        shift_type_description.grid(row=2, column=0, columnspan=2, pady=5)
+    
+        input_frame = tk.Frame(film_shift_window)
+        input_frame.pack(pady=10)
+    
+        x_label = tk.Label(input_frame, text="Enter X value:")
+        x_label.grid(row=0, column=0, padx=5, pady=5)
+        x_entry = tk.Entry(input_frame)
+        x_entry.grid(row=0, column=1, padx=5, pady=5)
+    
+        y_label = tk.Label(input_frame, text="Enter Y value:")
+        y_label.grid(row=1, column=0, padx=5, pady=5)
+        y_entry = tk.Entry(input_frame)
+        y_entry.grid(row=1, column=1, padx=5, pady=5)
+    
+        confirm_button = tk.Button(film_shift_window, text="Confirm", command=on_confirm)
+        confirm_button.pack(pady=10)
+        film_shift_window.bind('<Return>', on_confirm)
+
+
+    def film_xy_shift_direct(self, x, y):
         print(' * Shifting interface by (%f %f 0)'%(x, y))
         try:
             positions_direct = self.film_lattice_matched.get_scaled_positions()
@@ -1194,29 +1563,214 @@ class GenInterface(VASPInput):
             self.film.set_scaled_positions(positions_direct)
 
 
-    def film_xy_shift_direct(self, xy):
-        x, y = xy
+    def film_xy_shift_cartesian(self, x, y):
+        print(' * Shifting interface by %f Å, %f Å, 0.000000 Å'%(x, y))
         try:
-            positions_direct = self.film_lattice_matched.get_scaled_positions()
-            positions_direct += [x, y, 0]
-            self.film_lattice_matched.set_scaled_positions(positions_direct)
+            positions_direct = self.film_lattice_matched.translate([x, y ,0])
         except:
-            positions_direct = self.film
-            positions_direct += [x, y, 0]
-            self.film.set_scaled_positions(positions_direct)
+            positions_direct = self.film.translate([x, y ,0])
+
+
+    def apply_strain(self, parent=None):
+        def on_confirm(event=None):
+            try:
+                x_strain = float(x_entry.get())
+                y_strain = float(y_entry.get())
+                self.x_strain = x_strain
+                self.y_strain = y_strain
+                lattice_params = self.interface.cell
+                self.x_strain = 0.01 * self.x_strain
+                self.y_strain = 0.01 * self.y_strain
+                lattice_params[0, 0] *= (1 + self.x_strain)
+                lattice_params[1, 1] *= (1 + self.y_strain)
+                self.strained_interface = self.interface
+                self.strained_interface.set_cell(lattice_params, scale_atoms=True)
+                self.make_poscar("%s/strained_interface.vasp"%self.project_directory, self.strained_interface)
+                strain_window.destroy()
+                view(self.strained_interface, block=True)
+                print(f"Applying strain: X = {x_strain}%, Y = {y_strain}%")
+                
+                
+            except ValueError as e:
+                messagebox.showerror("Input Error", f"Invalid input: {e}")
+    
+        strain_window = tk.Toplevel(parent)
+        strain_window.title("Apply Strain")
+    
+        instruction_frame = tk.Frame(strain_window)
+        instruction_frame.pack(pady=10)
+    
+        instruction_label = tk.Label(
+            instruction_frame, 
+            text="Enter the strain values to apply (as percentages):",
+            fg="black"
+        )
+        instruction_label.pack()
+    
+        input_frame = tk.Frame(strain_window)
+        input_frame.pack(pady=10)
+    
+        x_label = tk.Label(input_frame, text="X Strain (%):")
+        x_label.grid(row=0, column=0, padx=5, pady=5)
+        x_entry = tk.Entry(input_frame)
+        x_entry.grid(row=0, column=1, padx=5, pady=5)
+    
+        y_label = tk.Label(input_frame, text="Y Strain (%):")
+        y_label.grid(row=1, column=0, padx=5, pady=5)
+        y_entry = tk.Entry(input_frame)
+        y_entry.grid(row=1, column=1, padx=5, pady=5)
+    
+        confirm_button = tk.Button(strain_window, text="Confirm", command=on_confirm)
+        confirm_button.pack(pady=10)
+        strain_window.bind('<Return>', on_confirm)
+    
+        strain_window.update_idletasks()
+        width = strain_window.winfo_width()
+        height = strain_window.winfo_height()
+        x = (strain_window.winfo_screenwidth() // 2) - (width // 2)
+        y = (strain_window.winfo_screenheight() // 2) - (height // 2)
+        strain_window.geometry(f"{width}x{height}+{x}+{y}")
+
+
+
+    def edit_tool(self):
+        def on_select(choice):
+            if choice == "Film Shift":
+                self.film_shift(root)
+            elif choice == "Apply Strain":
+                self.apply_strain(root)
+
+        # Initialize the main Tkinter window
+        root = tk.Tk()
+        root.title("Interface edit tool")
+
+        root.geometry("300x200")
+
+        tk.Label(root, text="Edit Tool", font=("Arial", 14)).pack(pady=10)
+        tk.Label(root, text="Choose a tool:").pack(pady=5)
+
+        film_shift_button = tk.Button(root, text="Adjust Film XY Position", command=lambda: on_select("Film Shift"))
+        film_shift_button.pack(pady=5)
+
+        apply_strain_button = tk.Button(root, text="Apply Strain", command=lambda: on_select("Apply Strain"))
+        apply_strain_button.pack(pady=5)
+
+        exit_button = tk.Button(root, text="Exit", command=root.destroy)
+        exit_button.pack(pady=5)
+
+        # Start the Tkinter main loop
+        root.mainloop()
+
+    def lattice_adjustment(self):
+        root = tk.Tk()
+        root.title("Lattice Adjustment")
+
+        label = tk.Label(root, text="Choose a lattice matching option:")
+        label.pack(pady=10)
+
+        option_var = tk.StringVar()
+        option_var.set('')
+
+        manual_radio = tk.Radiobutton(
+            root, text="Manual Lattice Matching", variable=option_var, value="manual")
+        manual_radio.pack(anchor="w", padx=20)
+
+        auto_radio = tk.Radiobutton(
+            root, text="Auto Lattice Matching", variable=option_var, value="auto")
+        auto_radio.pack(anchor="w", padx=20)
+
+        error_label = tk.Label(root, text="", fg="red")
+        error_label.pack()
+
+        def on_confirm(event=None):
+            selected_option = option_var.get()
+            print(f"Selected option: {selected_option}")
+
+            if selected_option:
+                self.option = selected_option
+                root.destroy()
+            else:
+                error_label.config(text="No option selected. Please select an option.")
+
+        confirm_button = tk.Button(root, text="Confirm", command=on_confirm)
+        confirm_button.pack(pady=10)
+        root.bind("<Return>", on_confirm)
+
+        root.mainloop()
+
+        if self.option == "manual":
+            self.manual_lattice_matching()
+        elif self.option == "auto":
+            self.auto_lattice_matching()
+        else:
+            print("No valid option selected.")
 
     def auto_lattice_matching(self):
         print(' * Automatically matching lattice\n')
         self.minimize_lattice_mismatch()
         self.lattice_matching()
 
-    def manual_lattice_matching(self,substrate_scaling_matrix=[1, 1], film_scaling_matrix=[1, 1]):
+    def manual_lattice_matching(self):
         print(' * Manually matching lattice')
         def transform_matrix(xy):
             x, y = xy
             return [[x, 0, 0],  
                     [0, y, 0],  
                     [0, 0, 1]]
+        def on_confirm():
+            try:
+                sub_x = int(substrate_x_entry.get())
+                sub_y = int(substrate_y_entry.get())
+                film_x = int(film_x_entry.get())
+                film_y = int(film_y_entry.get())
+
+                self.substrate_scaling_matrix = transform_matrix([sub_x, sub_y])
+                self.film_scaling_matrix = transform_matrix([film_x, film_y])
+
+                root.destroy()
+
+            except ValueError:
+                messagebox.showerror("Invalid Input", "Please enter valid integer values.")
+
+        root = tk.Tk()
+        root.title("Manual Lattice Matching")
+
+        instructions = tk.Label(root, text="Enter x and y values for scaling matrices:")
+        instructions.grid(row=0, column=0, columnspan=2, pady=10)
+
+        substrate_label = tk.Label(root, text="Substrate Scaling Matrix:")
+        substrate_label.grid(row=1, column=0, pady=5, sticky="e")
+
+        substrate_x_entry = tk.Entry(root, width=5)
+        substrate_x_entry.grid(row=1, column=1, pady=5, sticky="w")
+        substrate_x_entry.insert(0, "1")
+
+        substrate_y_entry = tk.Entry(root, width=5)
+        substrate_y_entry.grid(row=1, column=2, pady=5, sticky="w")
+        substrate_y_entry.insert(0, "1")
+
+        # Film scaling matrix inputs
+        film_label = tk.Label(root, text="Film Scaling Matrix:")
+        film_label.grid(row=2, column=0, pady=5, sticky="e")
+
+        film_x_entry = tk.Entry(root, width=5)
+        film_x_entry.grid(row=2, column=1, pady=5, sticky="w")
+        film_x_entry.insert(0, "1")
+
+        film_y_entry = tk.Entry(root, width=5)
+        film_y_entry.grid(row=2, column=2, pady=5, sticky="w")
+        film_y_entry.insert(0, "1")
+
+        # Confirm button
+        confirm_button = tk.Button(root, text="Confirm", command=on_confirm)
+        confirm_button.grid(row=3, column=0, columnspan=3, pady=10)
+
+        # Run the GUI
+        root.mainloop()
+
+        # Print the scaling matrices after the GUI closes
+        print(f"Substrate scaling matrix: {self.substrate_scaling_matrix}")
+        print(f"Film scaling matrix: {self.film_scaling_matrix}")
 
         self.substrate_scaling_matrix = transform_matrix(substrate_scaling_matrix)
         self.film_scaling_matrix = transform_matrix(film_scaling_matrix)
@@ -1316,11 +1870,6 @@ class GenInterface(VASPInput):
     def lattice_z_transform(self, original_lattice, z_latt_to_transform):
         return np.array([original_lattice[0], original_lattice[1], z_latt_to_transform])
 
-
-
-
-                
-
 class BulkSet(VASPInput):
     def __init__(self, bulk = None, potcar = 'pbe', ncore = 4, charge = 0):
         super().__init__(potcar, charge)
@@ -1362,15 +1911,19 @@ class BulkSet(VASPInput):
         self.is_semi = True
 
     def check_object_type(self, obj):
+        self.set_project_directory('Bulk')
+
         if obj == None:
-            obj = self.open_filedialog()
-            self.structure = read(obj)
-            self.set_project_directory()
+            obj = self.open_filedialog('Select bulk structure file (e.g., POSCAR)')
+            try:
+                self.structure = read(obj)
+            except Exception as e:
+                print("An error occurred while opening the file:", e)
+                sys.exit(1)
 
         elif isinstance(obj, str):
                 try:
                     self.structure = read(obj)
-                    self.set_project_directory()
                 except:
                     print('Check your bulk POSCAR file path')
                     raise FileNotFoundError
@@ -1519,7 +2072,7 @@ class BulkSet(VASPInput):
         self.make_kpoints(self.corrected_directory + '/KPOINTS', AseAtomsAdaptor.get_structure(self.structure), [20,20,20])
 
     def semiconductor_check(self):
-        def on_button_click():
+        def on_button_click(event=None):
             if self.var.get() == 1:
                 self.semi_setup()
             else:
@@ -1530,30 +2083,30 @@ class BulkSet(VASPInput):
         root.title("Semiconductor check")
         label = tk.Label(root, text="%s: Semiconductor or not?"%self.formula, font=("Arial", 14))
         label.pack(pady=20)
-        yes_check = tk.Checkbutton(root, text="Yes", variable=self.var, onvalue=1, offvalue=0, font=("Arial", 12))
+        yes_check = tk.Radiobutton(root, text="Yes (Semiconductor)", variable=self.var, value=1, font=("Arial", 12))
         yes_check.pack(pady=10)
-        no_check = tk.Checkbutton(root, text="No", variable=self.var, onvalue=0, offvalue=1, font=("Arial", 12))
+        no_check = tk.Radiobutton(root, text="No (Metal)", variable=self.var, value=0, font=("Arial", 12))
         no_check.pack(pady=10)
         btn = tk.Button(root, text="Submit", font=("Arial", 12), command=on_button_click)
         btn.pack(pady=20)
+        root.bind("<Return>", on_button_click)
         root.mainloop()
 
 
-    def runfile_setup(self,runfile_name='run.sh', nodes='2', processors='16', queue_name='Null', scheduler=None):
+    def runfile_setup(self,runfile_name='run.sh', nodes='2', processors='16', queue_name='Null', scheduler="Auto"):
         self.read_path_vasp()
         for dirpath, dirnames, filenames in os.walk(self.working_directory):
             if 'POSCAR' in filenames:
-                self.make_runfile(dirpath+'/'+runfile_name, nodes, processors, queue_name, scheduler=scheduler)
+                self.make_runfile(dirpath,runfile_name, nodes, processors, queue_name, scheduler=scheduler)
 
 class SurfaceSet(QE_Input):
     def __init__(self, surface):
         super().__init__()
         print('\n\n############### Initialize SurfaceSet to make calculation sets for complex band structure ###############\n')
         self.check_object_type(surface)
-        self.QE_directory = self.working_directory+'/QE'
+        self.QE_directory = os.path.join(self.working_directory,'QE')
         self.make_directory(self.QE_directory)
-        self.make_directory(self.QE_directory+'/pseudos')
-        return
+        self.make_directory(os.path.join(self.QE_directory,'pseudos'))
 
     def check_object_type(self, obj):
         if isinstance(obj, str):
@@ -1567,8 +2120,72 @@ class SurfaceSet(QE_Input):
         else:
             raise TypeError
 
-    def scf_setup(self, pseudopotentials, custom_option=None):
+    def write_pseudo(self, elements):
+
+        def select_pseudopotentials(elements, pseudo_dir):
+
+            def browse_file(el, entry):
+                initial_dir = pseudo_dir
+                filetypes = [("UPF files", f"{el}.*.UPF")]
+                filename = filedialog.askopenfilename(
+                    title=f"Select pseudopotential file for {el}",
+                    initialdir=initial_dir,
+                    filetypes=filetypes
+                )
+                if filename:
+                    entry.delete(0, tk.END)
+                    entry.insert(0, filename)
+        
+            root = tk.Tk()
+            root.title("Select Pseudopotential Files")
+            root.geometry("600x200")
+        
+            def on_close():
+                messagebox.showwarning("No selection", "No pseudopotential selected. The program will now exit.")
+                root.destroy()
+                sys.exit(1)
+        
+            root.protocol("WM_DELETE_WINDOW", on_close)
+        
+            entries = {}
+            selected = {}
+        
+            for idx, el in enumerate(elements):
+                tk.Label(root, text=f"{el}:").grid(row=idx, column=0, padx=10, pady=5, sticky="e")
+                entry = tk.Entry(root, width=50)
+                entry.grid(row=idx, column=1, padx=5, pady=5)
+                entries[el] = entry
+                tk.Button(root, text="Browse", command=lambda e=el, ent=entry: browse_file(e, ent)).grid(row=idx, column=2, padx=5)
+        
+            def submit():
+                for el, ent in entries.items():
+                    val = ent.get().strip()
+                    if val == "":
+                        messagebox.showwarning("Incomplete", "All pseudopotential files must be selected. Exiting.")
+                        root.destroy()
+                        sys.exit(1)
+                    selected[el] = val
+                root.destroy()
+
+            submit_btn = tk.Button(root, text="Submit", command=submit)
+            submit_btn.grid(row=len(elements), column=1, pady=15)
+            root.bind("<Return>", lambda event: submit())
+            root.mainloop()
+            return selected
+
+        self.read_path_qe_pseudo()
+        self.selected_paths = select_pseudopotentials(elements, self.prefix_qe_pseudo)
+        for el, src_path in self.selected_paths.items():
+            if not os.path.isfile(src_path):
+                raise FileNotFoundError(f"File not found: {src_path}")
+            dst_path = os.path.join(os.path.join(self.QE_directory, 'pseudos'), os.path.basename(src_path))
+            shutil.copy2(src_path, dst_path)
+        self.pseudopotentials = {el: os.path.basename(path) for el, path in self.selected_paths.items()}
+
+    def scf_setup(self, pseudopotentials=None, custom_option=None):
         self.formula = Composition(self.structure.get_chemical_formula()).reduced_formula
+        elements = list(set(self.structure.get_chemical_symbols()))
+        self.write_pseudo(elements)
         self.QE_SCF_directory = self.QE_directory + '/SCF'
         print(' * Making Quantum espresso SCF calculation set for %s in "%s" \n'%(self.formula, os.path.abspath(self.QE_SCF_directory)))
         self.make_directory(self.QE_SCF_directory)
@@ -1588,7 +2205,7 @@ class SurfaceSet(QE_Input):
             system={"ecutwfc": 80, "ecutrho": 500, "nat": self.structure.num_sites, "ntyp": len(self.structure.symbol_set), "nbnd": self.num_band, "nosym": True},
             electrons={"conv_thr": 1.0e-8, "mixing_beta": 0.4},
             kpoints_grid=kpoints_grid,
-            pseudo = pseudopotentials
+            pseudo = self.pseudopotentials
             )
         qe_input.write_file(self.QE_SCF_directory+'/qe.in')
 
@@ -1620,11 +2237,11 @@ class SurfaceSet(QE_Input):
             if not os.path.exists(self.QE_CBS_directory+'/scf.save'):
                 os.symlink('../SCF/scf.save', self.QE_CBS_directory+'/scf.save')
 
-    def runfile_setup(self,runfile_name='run.sh', nodes='1', processors='32', queue_name='Null', scheduler=None):
+    def runfile_setup(self,runfile_name='run.sh', nodes='1', processors='32', queue_name='Null', scheduler="Auto"):
         self.read_path_pw()
-        self.make_runfile(self.QE_SCF_directory+'/'+runfile_name, nodes, processors, queue_name, scheduler)
+        self.make_runfile(self.QE_SCF_directory, runfile_name, nodes, processors, queue_name, scheduler)
         self.read_path_pwcond()
-        self.make_runfile(self.QE_CBS_directory+'/'+runfile_name, nodes, processors, queue_name, scheduler)
+        self.make_runfile(self.QE_CBS_directory, runfile_name, nodes, processors, queue_name, scheduler)
 
 class InterfaceSet(VASPInput):
     def __init__(self, interface,  potcar = 'pbe', ncore = 4 ,charge = 0):
@@ -1655,10 +2272,18 @@ class InterfaceSet(VASPInput):
         self.dos_setup()
 
     def check_object_type(self, obj):
-        if isinstance(obj, str):
+        self.set_project_directory("Interface")
+        if obj == None:
+            obj = self.open_filedialog('Select interface structure file (e.g., interface.vasp)')
+            try:
+                self.structure = read(obj)
+            except Exception as e:
+                print("An error occurred while opening the file:", e)
+                sys.exit(1)
+
+        elif isinstance(obj, str):
                 try:
                     self.structure = read(obj)
-                    self.set_project_directory()
                 except:
                     print('Check your interface POSCAR file path')
                     raise FileNotFoundError
@@ -1732,19 +2357,22 @@ class InterfaceSet(VASPInput):
         self.make_kpoints(self.dos_directory + '/KPOINTS', AseAtomsAdaptor.get_structure(self.structure), [40,40,1])
         return
 
-    def runfile_setup(self,runfile_name='run.sh', nodes='4', processors='16', queue_name='Null', scheduler=None):
+    def runfile_setup(self,runfile_name='run.sh', nodes='4', processors='16', queue_name='Null', scheduler="Auto"):
         self.read_path_vasp()
         for dirpath, dirnames, filenames in os.walk(self.project_directory):
             if 'POSCAR' in filenames:
-                self.make_runfile(dirpath+'/'+runfile_name, nodes, processors, queue_name, scheduler=scheduler)
-
+                self.make_runfile(dirpath, runfile_name, nodes, processors, queue_name, scheduler=scheduler)
 
 class GetSBHResult(BasicTool):
-    def __init__(self, calc_project = None):
-        self.check_object_type(calc_project)
+    def __init__(self):
         super().__init__()
+        self.set_project_directory("Result")
+        self.result_path_name = os.path.basename(self.project_directory)
 
-    def get_vasp_result(self):
+    def get_vasp_result(self, bulk_path = None, interface_path = None):
+        self.bulk_path = self.check_object_type(bulk_path,'Bulk', ['DOS', 'Correction', 'Dielec', 'Chg', 'Relax'])
+        self.interface_path = self.check_object_type(interface_path, 'Interface', ['DOS', 'Chg', 'Relax'])
+        self.path_setting()
         print('\n\n############### Retrieving bulk calculation results ###############')
         self.get_bulk_dos(self.bulk_dos_path)
         self.get_bulk_corrected(self.bulk_corrected_path)
@@ -1752,8 +2380,8 @@ class GetSBHResult(BasicTool):
         self.get_bulk_dielec(self.bulk_dielec_path)
         print('\n\n############### Retrieving interface calculation results ###############')
         self.get_interface_dos(self.interface_dos_path)
-        self.get_semi_1st_layer_dos(15.9,18.5)
-        self.get_metal_1st_layer_dos(12.7,15.3)
+        self.get_semi_1st_layer_dos()#15.9,18.5)
+        self.get_metal_1st_layer_dos()#12.7,15.3)
         self.get_semi_next_layer_dos(self.semi_1st_layer_min_z, 
             self.semi_1st_layer_max_z, self.semi_1st_layer_thickness)
         semi_2nd_layer_position = (self.semi_layer_min_z+self.semi_layer_max_z)/2
@@ -1767,43 +2395,102 @@ class GetSBHResult(BasicTool):
         self.write_vasp_result()
         return
 
-    def qe_setup(self, pseudopotentials, scheduler = None):
+    def qe_setup(self, surface_path = None, scheduler = None):     
+        self.result_path = self.check_object_type(None, self.result_path_name, ['DOStot.dat', 'k_mesh.dat', 'dos_bulk.dat', 'kpdos_int_2.dat', 'vasp_result.dat'])
+        self.surface_path = self.check_object_type(surface_path, 'Surface', [])
         self.surface_calc_set = SurfaceSet(self.surface_path+'/cbs_surface.vasp')
-        self.surface_calc_set.scf_setup(pseudopotentials)
+        self.surface_calc_set.scf_setup()
         self.original_bandgap = np.genfromtxt(self.result_path + '/vasp_result.dat', comments='!', usecols=0)[0]
         with open(self.result_path+'/k_mesh.dat','r') as kmesh_dat:
             kmesh = kmesh_dat.read() 
         self.surface_calc_set.cbs_setup(self.original_bandgap, kmesh)
         self.surface_calc_set.runfile_setup(scheduler = scheduler)
 
-    def get_qe_result(self):
+    def get_qe_result(self, surface_path = None):
         print('\n\n############### Retrieving QE calculation results ###############')
+        self.result_path = self.check_object_type(None, self.result_path_name, ['DOStot.dat', 'k_mesh.dat', 'dos_bulk.dat', 'kpdos_int_2.dat', 'vasp_result.dat'])
+        self.surface_path = self.check_object_type(surface_path, 'Surface', [])
         self.get_qe_scf()
         self.get_qe_cbs()
         self.scissor_cbs()
         self.write_qe_result()
         return
 
-    def check_object_type(self, obj):
-        if obj == None:
-            self.project_directory = os.getcwd()
-        elif isinstance(obj, str):
-            self.project_directory = obj
+    def check_object_type(self, obj = None, name = None, required_dirs = None):
+        def choose_path(options, name):
+            selected = {"value": None}
+            def on_ok():
+                selected["value"] = var.get()
+                window.destroy()
+
+            def on_cancel():
+                window.destroy()
+
+            window = tk.Tk()
+            window.title("Select Path for %s:"%name)
+            window.geometry("480x300")
+            tk.Label(window, text="Choose one of the following directories: ", pady=10).pack()
+            var = tk.StringVar(value="")
+            for option in options:
+                tk.Radiobutton(window, text=option, variable=var, value=option).pack(anchor="w", padx=20)
+
+            tk.Radiobutton(window, text="Skip and choose manually", variable=var, value="__NONE__").pack(anchor="w", padx=20, pady=(10, 0))
+            btn_frame = tk.Frame(window)
+            btn_frame.pack(pady=15)
+            
+            tk.Button(btn_frame, text="OK", width=10, command=on_ok).pack(side=tk.LEFT, padx=10)
+            tk.Button(btn_frame, text="Cancel", width=10, command=on_cancel).pack(side=tk.RIGHT, padx=10)
+            window.bind("<Return>", lambda event: on_ok())
+            window.mainloop()
+            return selected["value"]
+
+        def select_directory(name):
+            root = tk.Tk()
+            root.withdraw()  
+            selected_dir = filedialog.askdirectory(title="Select a directory for results of %s calculation"%name)
+            if not selected_dir:
+                messagebox.showwarning(parent=root, title="No Directory Selected",
+                    message="No directory was selected. The program will now exit.")
+                root.destroy()
+                sys.exit(1)
+            confirm = messagebox.askyesno(parent=root, title="Confirm Directory",
+                message=f"Use the selected directory?\n\n{selected_dir}")
+
+            if confirm:
+                root.destroy()
+                return selected_dir
+            else:
+                messagebox.showinfo(parent=root, title="Directory Not Confirmed",
+                    message="The selected directory was not confirmed. The program will now exit.")
+                root.destroy()
+                sys.exit(1)
+
+        if isinstance(obj, str):
+            target_path = obj
+            return target_path
+        elif obj == None:
+            try:
+                dir_list = self.find_subdirs(name)
+                target_path_list = []
+                for dir_ in dir_list:
+                    target_path_list.append(self.path_checker(dir_, required_dirs))
+                target_path = choose_path(target_path_list, name)
+                if target_path and target_path != "__NONE__":
+                    return target_path   
+                return select_directory(name)
+            except SystemExit:
+                raise    
+            except:
+                raise FileNotFoundError(f"Can't find %s directory"%name)
         else:
             raise TypeError
 
-        try:
-            required_bulk_dirs = ['DOS', 'Correction', 'Dielec', 'Chg', 'Relax']
-            bulk_path = self.path_checker(self.project_directory+'/Bulk', required_bulk_dirs)
-            self.bulk_dos_path = bulk_path + '/DOS'
-            self.bulk_corrected_path = bulk_path + '/Correction'
-            self.bulk_dielec_path = bulk_path + '/Dielec'
-            self.interface_dos_path = self.project_directory +'/Interface/DOS'
-            self.surface_path = self.project_directory + '/Surface'
-            self.result_path = self.project_directory + '/Result'
-            self.make_directory(self.result_path)
-        except:
-            raise FileNotFoundError(f"Can't find Project directory")
+    def path_setting(self):
+        self.bulk_dos_path = self.bulk_path + '/DOS'
+        self.bulk_corrected_path = self.bulk_path + '/Correction'
+        self.bulk_dielec_path = self.bulk_path + '/Dielec'
+        self.interface_dos_path = self.interface_path +'/DOS'
+        self.result_path = self.project_directory
 
     def get_bulk_dos(self, bulk_dos_path):
         print("\n * Obtaining bulk DOS result ")
@@ -1848,19 +2535,63 @@ class GetSBHResult(BasicTool):
             er = electronic_mean + ionic_mean
             return er
 
+        def choose_method(pbe_value, lda_value):
+            selected = {"value": None}
+            def on_ok():
+                    selected["value"] = var.get()
+                    window.destroy()
+            
+            def on_cancel():
+                window.destroy()
+                sys.exit("Program exited: dielectric method not selected.")
+        
+            window = tk.Tk()
+            window.title("Select Dielectric Constant Method")
+            window.geometry("460x180")
+            window.protocol("WM_DELETE_WINDOW", on_cancel)  # [X] 버튼 누를 때 종료
+        
+            tk.Label(window, text="Choose a method for dielectric constant:", pady=15).pack()
+        
+            var = tk.StringVar(value="pbe")
+        
+            frame = tk.Frame(window)
+            frame.pack()
+        
+            # PBE row
+            row1 = tk.Frame(frame)
+            row1.pack(anchor="w", padx=30, pady=5)
+            tk.Radiobutton(row1, variable=var, value="pbe").pack(side="left")
+            tk.Label(row1, text=f"PBE: {pbe_value:.6f}").pack(side="left", padx=10)
+        
+            # LDA row
+            row2 = tk.Frame(frame)
+            row2.pack(anchor="w", padx=30, pady=5)
+            tk.Radiobutton(row2, variable=var, value="lda").pack(side="left")
+            tk.Label(row2, text=f"LDA: {lda_value:.6f}").pack(side="left", padx=10)
+        
+            btn_frame = tk.Frame(window)
+            btn_frame.pack(pady=20)
+        
+            tk.Button(btn_frame, text="OK", width=10, command=on_ok).pack(side="left", padx=10)
+            tk.Button(btn_frame, text="Cancel", width=10, command=on_cancel).pack(side="right", padx=10)
+        
+            window.bind("<Return>", lambda event: on_ok())  # ⏎ = OK
+            window.mainloop()
+        
+            return selected["value"]
+
         pbe_er = get_dielec(bulk_dielec_path+'/PBE')
         lda_er = get_dielec(bulk_dielec_path+'/LDA')
-
-        print('  -. Dielectric constant calculated with PBE: %f'%pbe_er)
-        print('  -. Dielectric constant calculated with LDA: %f\n'%lda_er)
-        choice = input("  Choose either 'pbe' or 'lda' for dielectric constant with PBE or LDA: ").strip().lower()
+        choice = choose_method(pbe_er, lda_er)
 
         if choice == 'pbe':
+            print("  -. PBE, dielectric constant: %f" % pbe_er)
             self.er = pbe_er
         elif choice == 'lda':
+            print("  -. LDA, dielectric constant: %f" % lda_er)
             self.er = lda_er
         else:
-            print('\nError: Invalid input provided!! Please type lda or pbe!! \n')
+            print('\nError: Invalid input provided!! Please type LDA or PBE!! \n')
             raise TypeError
 
 
@@ -1877,10 +2608,56 @@ class GetSBHResult(BasicTool):
         self.kpts_weight = np.round(np.array(self.kpts_weight)*100).astype(int)
         self.kmesh = np.column_stack((np.array(self.kpts)[:, :2],self.kpts_weight))
 
-    def get_semi_1st_layer_dos(self, min_z, max_z):
+
+    def get_z_bounds(self, name):
+        result = {"min_z": None, "max_z": None}
+    
+        def on_submit():
+            try:
+                min_val = float(entry_min.get())
+                max_val = float(entry_max.get())
+    
+                if min_val > max_val:
+                    messagebox.showerror("Invalid Input", "Minimum z must be less than or equal to maximum z.")
+                    return
+    
+                result["min_z"] = min_val
+                result["max_z"] = max_val
+                root.destroy()
+            except ValueError:
+                messagebox.showerror("Invalid Input", "Please enter valid numeric values.")
+    
+        def on_cancel():
+            root.destroy()
+    
+        root = tk.Tk()
+        root.title("Enter z-range to extract atoms from the 1st layer of %s interface"%name)
+        root.geometry("320x160")
+    
+        tk.Label(root, text="Minimum z value (Å):").pack(pady=(10, 0))
+        entry_min = tk.Entry(root)
+        entry_min.pack()
+    
+        tk.Label(root, text="Maximum z value (Å):").pack(pady=(10, 0))
+        entry_max = tk.Entry(root)
+        entry_max.pack()
+    
+        btn_frame = tk.Frame(root)
+        btn_frame.pack(pady=15)
+    
+        tk.Button(btn_frame, text="OK", width=10, command=on_submit).pack(side=tk.LEFT, padx=10)
+        tk.Button(btn_frame, text="Cancel", width=10, command=on_cancel).pack(side=tk.RIGHT, padx=10)
+    
+        root.mainloop()
+    
+        return result["min_z"], result["max_z"]
+
+    def get_semi_1st_layer_dos(self):
         print("\n  -. Extracting atoms list & deriving DOS of semiconductor 1st layer from given input ")
         self.layer_order = 1
         self.material_type = 'semiconductor'
+        view(AseAtomsAdaptor.get_atoms(self.total_interface_structure))
+        min_z, max_z = self.get_z_bounds(self.material_type)
         self.layer_dos_extraction(min_z, max_z)
         self.semi_1st_layer_dos = self.layer_dos
         self.semi_1st_layer_min_z = self.min_z_layer
@@ -1973,9 +2750,11 @@ class GetSBHResult(BasicTool):
         self.total_1st_layer_dos = np.column_stack((new_E, SC_interp_DOS, M_interp_DOS))
         self.efermi = self.original_bandgap + self.vbm
 
-    def get_metal_1st_layer_dos(self, min_z, max_z):
+    def get_metal_1st_layer_dos(self):
         print("\n  -. Extracting atoms list & deriving DOS of metal 1st layer from given input ")
         self.material_type = 'metal'
+        #view(AseAtomsAdaptor.get_atoms(self.total_interface_structure))
+        min_z, max_z = self.get_z_bounds(self.material_type)
         self.layer_dos_extraction(min_z, max_z)
         self.metal_1st_layer_dos = self.layer_dos
         self.metal_1st_layer_min_z = self.min_z_layer

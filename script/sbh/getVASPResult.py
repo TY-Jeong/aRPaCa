@@ -4,14 +4,40 @@ import argparse
 from arpaca.utils import *
 
 parser = argparse.ArgumentParser(description="Script to get VASP results.")
-parser.add_argument("result_path", type=str, help="Path to save the result file.")
+
+parser.add_argument(
+    "--bulk_path",
+    "-b",
+    type=str,
+    default=None,
+    required=False,
+    help="Path of results of bulk calculations")
+
+parser.add_argument(
+    "--interface_path",
+    "-i",
+    type=str,
+    default=None,
+    required=False,
+    help="Path of results of interface calculations")
+
+
+
 args = parser.parse_args()
-result_path = args.result_path
-result_dir = os.path.dirname(result_path)
-if result_dir and not os.path.exists(result_dir):
-    os.makedirs(result_dir)
+bulk_path = args.bulk_path
+interface_path = args.interface_path
 
-#print(f"Result will be saved at: {result_path}")
+if bulk_path is None:
+    print("No bulk path provided. Use the '--help' option to see usage details if you want.\n")
+else:
+    print(f"Processing bulk VASP results at: {bulk_path}")
 
-result = GetSBHResult(result_path)
-result.get_vasp_result()
+if interface_path is None:
+    print("No interface path provided. Use the '--help' option to see usage details if you want.\n")
+else:
+    print(f"Processing interface VASP results at: {interface_path}")
+
+
+
+result = GetSBHResult()
+result.get_vasp_result(bulk_path, interface_path)
